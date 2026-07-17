@@ -19,3 +19,7 @@ export const defaultInquiryMailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURI
 export const defaultInquirySms = `sms:${CONTACT_PHONE}?body=${encodeURIComponent(DEFAULT_INQUIRY_BODY)}`;
 // Google Maps directions to Aama Day Care Center, 737 Birdwood Ct, San Ramon, CA 94582
 export const directionsUrl = 'https://www.google.com/maps/dir/?api=1&destination=Aama+Day+Care+Center,+San+Ramon,+CA+94582';
+
+// Always the live production URL — printed on a physical door sign, so it must never
+// resolve to a dev/preview origin even if generated from one.
+export const checkinDoorSignUrl = 'https://aamadaycare.com/checkin';

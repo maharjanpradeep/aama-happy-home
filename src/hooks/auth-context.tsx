@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface User {
   name: string;
@@ -9,36 +9,52 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  setUser: (user: User | null) => void;
+  idToken: string | null;
+  login: (idToken: string) => void;
   logout: () => void;
+}
+
+const TOKEN_KEY = 'checkinIdToken';
+
+// Matches aama-service-k's AUTH_BYPASS_ENABLED contract (middleware/googleAuth.ts) —
+// these tokens skip real Google verification on the backend, dev-only.
+export const TEST_PARENT_TOKEN = 'test:parent';
+export const TEST_ADMIN_TOKEN = 'test:admin';
+export const TEST_VISITOR_TOKEN = 'test:visitor';
+
+const TEST_USERS: Record<string, User> = {
+  [TEST_PARENT_TOKEN]: { name: 'Test Parent', email: 'test-parent@local.test' },
+  [TEST_ADMIN_TOKEN]: { name: 'Test Admin', email: 'test-admin@local.test' },
+  [TEST_VISITOR_TOKEN]: { name: 'Test Visitor', email: 'test-visitor@local.test' },
+};
+
+function decodeToken(idToken: string): User | null {
+  if (import.meta.env.DEV && idToken in TEST_USERS) return TEST_USERS[idToken];
+  try {
+    return JSON.parse(atob(idToken.split('.')[1]));
+  } catch {
+    return null;
+  }
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUserState] = useState<User | null>(null);
+  const [idToken, setIdToken] = useState<string | null>(() => sessionStorage.getItem(TOKEN_KEY));
+  const user = idToken ? decodeToken(idToken) : null;
 
-  // Load user from localStorage on mount
-  useEffect(() => {
-    const storedUser = localStorage.getItem('authUser');
-    if (storedUser) {
-      setUserState(JSON.parse(storedUser));
-    }
-  }, []);
-
-  // Update localStorage whenever user changes
-  const setUser = (user: User | null) => {
-    setUserState(user);
-    if (user) {
-      localStorage.setItem('authUser', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('authUser');
-    }
+  const login = (token: string) => {
+    sessionStorage.setItem(TOKEN_KEY, token);
+    setIdToken(token);
   };
 
-  const logout = () => setUser(null);
+  const logout = () => {
+    sessionStorage.removeItem(TOKEN_KEY);
+    setIdToken(null);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, logout }}>
+    <AuthContext.Provider value={{ user, idToken, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
