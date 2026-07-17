@@ -1,15 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/auth-context';
+import { useAuth, TEST_PARENT_TOKEN, TEST_ADMIN_TOKEN, TEST_VISITOR_TOKEN } from '@/hooks/auth-context';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Phone, MessageCircle, MapPin, User as UserIcon } from 'lucide-react';
+import { Menu, X, Phone, MessageCircle, MapPin, User as UserIcon, LogOut, UserCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { defaultInquirySms, directionsUrl } from '@/lib/contact';
+import { scrollToSection as scrollToSectionShared } from '@/lib/scrollToSection';
 import { trackCta } from '@/lib/analytics';
 
 const Header = () => {
-  const { user, setUser, logout } = useAuth();
+  const { user, login, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -39,44 +49,18 @@ const Header = () => {
   ];
 
   const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const decoded: any = credentialResponse.credential ? JSON.parse(atob(credentialResponse.credential.split('.')[1])) : null;
-    setUser(decoded);
-  };
-
-  const scrollToSection = (path: string) => {
-    const hashIndex = path.indexOf('#');
-    const route = (hashIndex >= 0 ? path.slice(0, hashIndex) : path) || '/';
-    const id = hashIndex >= 0 ? path.slice(hashIndex + 1) : '';
-
-    const scrollToTarget = () => {
-      if (!id) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return true;
-      }
-      const element = document.getElementById(id);
-      if (element) {
-        const offset = 80; // Account for fixed header
-        const offsetPosition = element.getBoundingClientRect().top + window.pageYOffset - offset;
-        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-        return true;
-      }
-      return false;
-    };
-
-    if (location.pathname === route) {
-      // Already on the target page — just scroll.
-      scrollToTarget();
-    } else {
-      // Different page — navigate first, then poll until the target section
-      // has rendered (the home page is heavy; a fixed delay can be too short).
-      navigate(route);
-      let tries = 0;
-      const timer = setInterval(() => {
-        if (scrollToTarget() || ++tries > 25) clearInterval(timer);
-      }, 80);
+    if (credentialResponse.credential) {
+      login(credentialResponse.credential);
     }
   };
+
+  const handleTestLogin = (token: string) => {
+    login(token);
+    setShowLoginDialog(false);
+    setMobileMenuOpen(false);
+  };
+
+  const scrollToSection = (path: string) => scrollToSectionShared(path, location.pathname, navigate);
 
   return (
     <header
@@ -114,51 +98,6 @@ const Header = () => {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-4">
-          {user ? (
-            <div className="flex items-center gap-3 pl-4 border-l border-slate-300">
-              <div className="flex flex-col items-end">
-                <span className={cn("text-xs font-bold", isScrolled ? "text-slate-900" : "text-slate-900")}>
-                  {user.name}
-                </span>
-                <button onClick={logout} className="text-[10px] uppercase tracking-wider underline hover:text-secondary transition-colors text-slate-600">
-                  Logout
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <Button
-                variant={isScrolled ? "outline" : "outline"}
-                size="sm"
-                className="gap-2 font-bold"
-                onClick={() => setShowLoginDialog(true)}
-              >
-                <UserIcon className="w-4 h-4" />
-                Login
-              </Button>
-
-              {/* Hidden Google Login - shown in dialog */}
-              {showLoginDialog && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6" onClick={() => setShowLoginDialog(false)}>
-                  <div className="p-8 bg-white rounded-[2rem] shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => setShowLoginDialog(false)}
-                      className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                    <h3 className="text-2xl font-bold mb-4 text-slate-900">Parent Portal Login</h3>
-                    <p className="text-slate-600 mb-6">Sign in with your Google account to access the parent portal.</p>
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={() => console.log('Login Failed')}
-                      width="100%"
-                    />
-                  </div>
-                </div>
-              )}
-            </>
-          )}
           <a href="tel:5107783220" onClick={() => trackCta('call', 'header_desktop')}>
             <Button variant={isScrolled ? "default" : "secondary"} size="sm" className="gap-2 font-bold shadow-lg">
               <Phone className="w-4 h-4" />
@@ -182,6 +121,87 @@ const Header = () => {
               Directions
             </Button>
           </a>
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 pl-4 border-l border-slate-300 outline-none">
+                  <Avatar className="h-8 w-8 border border-slate-200">
+                    <AvatarImage src={user.picture as string | undefined} alt={user.name} />
+                    <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
+                      {user.name?.charAt(0)?.toUpperCase() ?? "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="font-normal">
+                  <p className="text-sm font-bold text-slate-900 truncate">{user.name}</p>
+                  <p className="text-xs text-slate-500 truncate">{user.email as string | undefined}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/checkin" className="flex items-center gap-2 cursor-pointer">
+                    <UserCircle className="w-4 h-4" />
+                    My Account
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive">
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Button
+                variant={isScrolled ? "outline" : "outline"}
+                size="sm"
+                className="gap-2 font-bold"
+                onClick={() => setShowLoginDialog(true)}
+              >
+                <UserIcon className="w-4 h-4" />
+                Login
+              </Button>
+
+              {/* Hidden Google Login - shown in dialog */}
+              {showLoginDialog && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6" onClick={() => setShowLoginDialog(false)}>
+                  <div className="p-8 bg-white rounded-[2rem] shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => setShowLoginDialog(false)}
+                      className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                    <h3 className="text-2xl font-bold mb-4 text-slate-900">Sign In</h3>
+                    <p className="text-slate-600 mb-6">Sign in with your Google account. Parents can check their child in or out; staff can view the admin dashboard.</p>
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => console.log('Login Failed')}
+                      width="100%"
+                    />
+                    {import.meta.env.DEV && (
+                      <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2">
+                        <span className="text-xs text-slate-400 uppercase tracking-wider font-bold">
+                          Dev only
+                        </span>
+                        <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_PARENT_TOKEN)}>
+                          Test Login: Parent
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_ADMIN_TOKEN)}>
+                          Test Login: Admin
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_VISITOR_TOKEN)}>
+                          Test Login: Visitor
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -234,21 +254,55 @@ const Header = () => {
           <div className="pt-4 flex flex-col gap-4">
             {!user ? (
               <div className="flex flex-col gap-2">
-                <span className="text-sm text-slate-500 font-medium">Parent Portal Login</span>
+                <span className="text-sm text-slate-500 font-medium">Sign In</span>
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
                   onError={() => console.log('Login Failed')}
                   width="100%"
                 />
+                {import.meta.env.DEV && (
+                  <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-2">
+                    <span className="text-xs text-slate-400 uppercase tracking-wider font-bold">
+                      Dev only
+                    </span>
+                    <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_PARENT_TOKEN)}>
+                      Test Login: Parent
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_ADMIN_TOKEN)}>
+                      Test Login: Admin
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_VISITOR_TOKEN)}>
+                      Test Login: Visitor
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
+              <div className="bg-slate-50 rounded-lg p-3 space-y-3">
                 <div className="flex items-center gap-3">
-                  <span className="font-bold text-slate-700">{user.name}</span>
+                  <Avatar className="h-10 w-10 border border-slate-200">
+                    <AvatarImage src={user.picture as string | undefined} alt={user.name} />
+                    <AvatarFallback className="text-sm font-bold bg-primary/10 text-primary">
+                      {user.name?.charAt(0)?.toUpperCase() ?? "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="font-bold text-slate-900 truncate">{user.name}</p>
+                    <p className="text-xs text-slate-500 truncate">{user.email as string | undefined}</p>
+                  </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={logout} className="text-destructive">
-                  Logout
-                </Button>
+                <div className="flex gap-2">
+                  <Link to="/checkin" className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full gap-1.5">
+                      <UserCircle className="w-4 h-4" />
+                      My Account
+                    </Button>
+                  </Link>
+                  <Button variant="ghost" size="sm" onClick={logout} className="flex-1 gap-1.5 text-destructive hover:text-destructive">
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </Button>
+                </div>
               </div>
             )}
           </div>

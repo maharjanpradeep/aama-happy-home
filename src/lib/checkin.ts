@@ -11,10 +11,17 @@ export interface AdminChildStatus extends ChildStatus {
   parentEmail: string;
 }
 
+export class ApiError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 async function parseResponse<T>(res: Response): Promise<T> {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(body.error ?? `Request failed (${res.status})`);
+    throw new ApiError(body.error ?? `Request failed (${res.status})`, res.status);
   }
   return body as T;
 }
@@ -51,9 +58,9 @@ export async function checkOutChild(idToken: string, childKey: string): Promise<
   return parseResponse(res);
 }
 
-export async function fetchAdminStatus(adminKey: string): Promise<{ children: AdminChildStatus[] }> {
+export async function fetchAdminStatus(idToken: string): Promise<{ children: AdminChildStatus[] }> {
   const res = await fetch(`${requireApiUrl()}/api/admin/status`, {
-    headers: { "x-admin-key": adminKey },
+    headers: { Authorization: `Bearer ${idToken}` },
   });
   return parseResponse(res);
 }

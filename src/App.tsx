@@ -2,14 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './hooks/auth-context';
 import Schedule from './pages/Schedule';
 import CheckIn from './pages/CheckIn';
-import CheckInAdmin from './pages/CheckInAdmin';
 import AIChatbot from './components/AIChatbot';
 import PageAnalytics from './components/PageAnalytics';
 
@@ -28,7 +27,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/checkin" element={<CheckIn />} />
-              <Route path="/checkin-admin" element={<CheckInAdmin />} />
+              <Route path="/checkin-admin" element={<Navigate to="/checkin" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

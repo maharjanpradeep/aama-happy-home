@@ -12,7 +12,7 @@ import { CONTACT_EMAIL, CONTACT_PHONE, defaultInquiryMailto, directionsUrl } fro
 import { trackCta } from '@/lib/analytics';
 
 const Contact = () => {
-  const { user, setUser, logout } = useAuth();
+  const { user, login, logout } = useAuth();
   const [showGoogleLogin, setShowGoogleLogin] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -43,8 +43,9 @@ const Contact = () => {
   };
 
   const handleGoogleSuccess = (credentialResponse: { credential?: string }) => {
-    const decoded = credentialResponse.credential ? JSON.parse(atob(credentialResponse.credential.split('.')[1])) : null;
-    setUser(decoded);
+    if (credentialResponse.credential) {
+      login(credentialResponse.credential);
+    }
   };
 
   return (

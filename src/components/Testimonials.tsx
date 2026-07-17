@@ -13,7 +13,7 @@ import { reviews } from '@/data/reviews';
 
 const Testimonials = () => {
     return (
-        <section className="py-20 bg-white border-t border-muted">
+        <section id="reviews" className="py-20 bg-white border-t border-muted">
             <div className="max-w-6xl mx-auto px-6">
                 <div className="text-center mb-16">
                     <h3 className="text-3xl font-bold text-foreground mb-4">What Parents Are Saying</h3>
