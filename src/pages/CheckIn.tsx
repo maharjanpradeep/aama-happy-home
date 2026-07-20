@@ -19,7 +19,6 @@ import EnrollChildDialog, { ChildFormValues } from "@/components/EnrollChildDial
 import DailyNoteDialog from "@/components/DailyNoteDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -30,7 +29,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -107,6 +105,13 @@ function formatNoteDate(dateStr: string): string {
   return new Date(y, m - 1, d).toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
+// Guardian names are only required going forward — older rows enrolled
+// before this field existed have it blank, so fall back to email.
+function formatGuardianLabel(guardian: { name: string; email: string; phone?: string }): string {
+  const label = guardian.name || guardian.email;
+  return guardian.phone ? `${label} (${guardian.phone})` : label;
+}
+
 const PICKUP_TIME_END_MINUTES = 18 * 60; // 6:00 PM
 
 function minutesToHHMM(minutes: number): string {
@@ -135,6 +140,20 @@ function generatePickupTimeOptions(fromHHMM: string): string[] {
 type ConfirmTarget =
   | { child: ChildStatus; role: "parent" }
   | { child: AdminChildStatus; role: "admin" };
+
+function StatusIndicator({ status }: { status: "checked-in" | "checked-out" }) {
+  const isCheckedIn = status === "checked-in";
+  return (
+    <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+      <span
+        className={`h-2 w-2 rounded-full ${isCheckedIn ? "bg-green-500" : "bg-slate-400"}`}
+      />
+      <span className={isCheckedIn ? "text-green-700" : "text-muted-foreground"}>
+        {isCheckedIn ? "Checked in" : "Checked out"}
+      </span>
+    </span>
+  );
+}
 
 const CheckIn = () => {
   usePageMeta({
@@ -290,7 +309,11 @@ const CheckIn = () => {
     try {
       await enrollChild(idToken, {
         childName: values.childName,
-        guardians: values.guardians.map((g) => ({ email: g.email, phone: g.phone || undefined })),
+        guardians: values.guardians.map((g) => ({
+          email: g.email,
+          name: g.name,
+          phone: g.phone || undefined,
+        })),
         address: values.address,
         physicianInfo: values.physicianInfo,
         enrollDate: values.enrollDate || undefined,
@@ -308,7 +331,11 @@ const CheckIn = () => {
     try {
       await updateChild(idToken, editingChild.childKey, {
         childName: values.childName,
-        guardians: values.guardians.map((g) => ({ email: g.email, phone: g.phone || undefined })),
+        guardians: values.guardians.map((g) => ({
+          email: g.email,
+          name: g.name,
+          phone: g.phone || undefined,
+        })),
         address: values.address,
         physicianInfo: values.physicianInfo,
         enrollDate: values.enrollDate || undefined,
@@ -348,7 +375,6 @@ const CheckIn = () => {
   };
 
   const hasChildren = children.length > 0;
-  const defaultTab = hasChildren ? "checkin" : "admin";
 
   // Descending by expected pickup time; children with none (checked out, or
   // no pickup set) sort after those with one.
@@ -541,14 +567,10 @@ const CheckIn = () => {
               </Card>
             )
           ) : (
-            <Tabs defaultValue={defaultTab}>
-              <TabsList>
-                {hasChildren && <TabsTrigger value="checkin">Check In / Out</TabsTrigger>}
-                {isAdmin && <TabsTrigger value="admin">Admin Dashboard</TabsTrigger>}
-              </TabsList>
-
+            <div className="space-y-10">
               {hasChildren && (
-                <TabsContent value="checkin" className="space-y-4">
+                <div className="space-y-4">
+                  <h2 className="text-xl font-bold">Check In / Out</h2>
                   {childrenError && <p className="text-red-600">{childrenError}</p>}
                   {children.map((child) => {
                     const isExpanded =
@@ -614,11 +636,12 @@ const CheckIn = () => {
                       </Card>
                     );
                   })}
-                </TabsContent>
+                </div>
               )}
 
               {isAdmin && (
-                <TabsContent value="admin">
+                <div>
+                  <h2 className="text-xl font-bold mb-4">Admin Dashboard</h2>
                   <div className="flex items-center justify-between mb-4 gap-2">
                     <Button size="sm" onClick={() => setEnrollOpen(true)} className="gap-1.5">
                       <UserPlus className="h-4 w-4" />
@@ -643,7 +666,7 @@ const CheckIn = () => {
                     </div>
                   ) : (
                     <>
-                      <div className="hidden md:block overflow-x-auto">
+                      <div className="hidden lg:block overflow-x-auto">
                         <Table>
                           <TableHeader>
                             <TableRow>
@@ -651,10 +674,10 @@ const CheckIn = () => {
                               <TableHead>Guardians</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Last event</TableHead>
-                              <TableHead>Last note</TableHead>
-                              <TableHead>Daily note</TableHead>
+                              <TableHead>Parent's note</TableHead>
+                              <TableHead>My daily note</TableHead>
                               <TableHead>Expected pickup</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
+                              <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -669,21 +692,19 @@ const CheckIn = () => {
                                     <TableCell className="font-medium">{child.childName}</TableCell>
                                     <TableCell className="text-sm">
                                       {child.guardians
-                                        .map((g) => (g.phone ? `${g.email} (${g.phone})` : g.email))
+                                        .map((g) => formatGuardianLabel(g))
                                         .join(", ")}
                                     </TableCell>
                                     <TableCell>
-                                      <Badge variant={child.status === "checked-in" ? "default" : "secondary"}>
-                                        {child.status === "checked-in" ? "Checked in" : "Checked out"}
-                                      </Badge>
+                                      <StatusIndicator status={child.status} />
                                     </TableCell>
                                     <TableCell>
                                       {child.lastEventAt ? new Date(child.lastEventAt).toLocaleString() : "—"}
                                     </TableCell>
-                                    <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                                    <TableCell className="max-w-[220px] whitespace-pre-line break-words text-sm text-muted-foreground">
                                       {child.lastNote || "—"}
                                     </TableCell>
-                                    <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                                    <TableCell className="max-w-[220px] whitespace-pre-line break-words text-sm text-muted-foreground">
                                       {child.dailyNote || "—"}
                                     </TableCell>
                                     <TableCell className="text-sm text-muted-foreground">
@@ -691,11 +712,10 @@ const CheckIn = () => {
                                         ? formatTimeLabel(child.expectedPickupTime)
                                         : "—"}
                                     </TableCell>
-                                    <TableCell>
-                                      <div className="flex justify-end gap-1.5 flex-wrap">
+                                    <TableCell className="whitespace-nowrap">
+                                      <div className="flex justify-end items-center gap-1.5 flex-nowrap">
                                         <Button
                                           size="sm"
-                                          variant={child.status === "checked-in" ? "outline" : "default"}
                                           disabled={adminActioningKey === child.childKey}
                                           onClick={() =>
                                             setConfirmTarget(isExpanded ? null : { child, role: "admin" })
@@ -747,7 +767,7 @@ const CheckIn = () => {
                         </Table>
                       </div>
 
-                      <div className="md:hidden space-y-3">
+                      <div className="lg:hidden space-y-3">
                         {sortedAdminChildren.map((child) => {
                           const isExpanded =
                             confirmTarget?.role === "admin" &&
@@ -758,14 +778,12 @@ const CheckIn = () => {
                               <CardContent className="p-4 space-y-2">
                                 <div className="flex items-center justify-between gap-3">
                                   <p className="font-semibold">{child.childName}</p>
-                                  <Badge variant={child.status === "checked-in" ? "default" : "secondary"}>
-                                    {child.status === "checked-in" ? "Checked in" : "Checked out"}
-                                  </Badge>
+                                  <StatusIndicator status={child.status} />
                                 </div>
                                 <p className="text-sm text-muted-foreground">
                                   Guardians:{" "}
                                   {child.guardians
-                                    .map((g) => (g.phone ? `${g.email} (${g.phone})` : g.email))
+                                    .map((g) => formatGuardianLabel(g))
                                     .join(", ")}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
@@ -773,10 +791,14 @@ const CheckIn = () => {
                                   {child.lastEventAt ? new Date(child.lastEventAt).toLocaleString() : "—"}
                                 </p>
                                 {child.lastNote && (
-                                  <p className="text-sm text-muted-foreground">Last note: {child.lastNote}</p>
+                                  <p className="text-sm text-muted-foreground whitespace-pre-line">
+                                    Parent's note: {child.lastNote}
+                                  </p>
                                 )}
                                 {child.dailyNote && (
-                                  <p className="text-sm text-muted-foreground">Daily note: {child.dailyNote}</p>
+                                  <p className="text-sm text-muted-foreground whitespace-pre-line">
+                                    My daily note: {child.dailyNote}
+                                  </p>
                                 )}
                                 {child.status === "checked-in" && child.expectedPickupTime && (
                                   <p className="text-sm text-muted-foreground">
@@ -786,7 +808,6 @@ const CheckIn = () => {
                                 <div className="flex gap-1.5 flex-wrap pt-1">
                                   <Button
                                     size="sm"
-                                    variant={child.status === "checked-in" ? "outline" : "default"}
                                     disabled={adminActioningKey === child.childKey}
                                     onClick={() =>
                                       setConfirmTarget(isExpanded ? null : { child, role: "admin" })
@@ -849,6 +870,7 @@ const CheckIn = () => {
                         ? {
                             childName: editingChild.childName,
                             guardians: editingChild.guardians.map((g) => ({
+                              name: g.name,
                               email: g.email,
                               phone: g.phone ?? "",
                             })),
@@ -865,8 +887,10 @@ const CheckIn = () => {
                   <DailyNoteDialog
                     open={!!dailyNoteChild}
                     onOpenChange={(open) => !open && setDailyNoteChild(null)}
+                    childKey={dailyNoteChild?.childKey}
                     childName={dailyNoteChild?.childName}
                     initialNote={dailyNoteChild?.dailyNote ?? ""}
+                    idToken={idToken}
                     onSubmit={handleDailyNoteSubmit}
                   />
 
@@ -888,9 +912,9 @@ const CheckIn = () => {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
-                </TabsContent>
+                </div>
               )}
-            </Tabs>
+            </div>
           )}
         </div>
       </main>

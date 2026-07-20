@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export interface GuardianFormValue {
+  name: string;
   email: string;
   phone: string;
 }
@@ -29,7 +30,7 @@ export interface ChildFormValues {
 
 const EMPTY_VALUES: ChildFormValues = {
   childName: "",
-  guardians: [{ email: "", phone: "" }],
+  guardians: [{ name: "", email: "", phone: "" }],
   address: "",
   physicianInfo: "",
   enrollDate: "",
@@ -85,7 +86,7 @@ const EnrollChildDialog = ({
   };
 
   const addGuardian = () => {
-    setValues((v) => ({ ...v, guardians: [...v.guardians, { email: "", phone: "" }] }));
+    setValues((v) => ({ ...v, guardians: [...v.guardians, { name: "", email: "", phone: "" }] }));
   };
 
   const removeGuardian = (index: number) => {
@@ -102,8 +103,8 @@ const EnrollChildDialog = ({
         ...values,
         childName: values.childName.trim(),
         guardians: values.guardians
-          .map((g) => ({ email: g.email.trim(), phone: g.phone.trim() }))
-          .filter((g) => g.email),
+          .map((g) => ({ name: g.name.trim(), email: g.email.trim(), phone: g.phone.trim() }))
+          .filter((g) => g.email && g.name),
       });
       onOpenChange(false);
     } finally {
@@ -112,7 +113,8 @@ const EnrollChildDialog = ({
   };
 
   const canSubmit =
-    values.childName.trim().length > 0 && values.guardians.some((g) => g.email.trim().length > 0);
+    values.childName.trim().length > 0 &&
+    values.guardians.some((g) => g.email.trim().length > 0 && g.name.trim().length > 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -144,6 +146,12 @@ const EnrollChildDialog = ({
             <div className="space-y-2">
               {values.guardians.map((guardian, i) => (
                 <div key={i} className="flex gap-2">
+                  <Input
+                    placeholder="Name"
+                    value={guardian.name}
+                    onChange={(e) => updateGuardian(i, "name", e.target.value)}
+                    className="flex-1"
+                  />
                   <Input
                     type="email"
                     placeholder="parent@example.com"
