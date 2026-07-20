@@ -144,13 +144,8 @@ type ConfirmTarget =
 function StatusIndicator({ status }: { status: "checked-in" | "checked-out" }) {
   const isCheckedIn = status === "checked-in";
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm font-medium">
-      <span
-        className={`h-2 w-2 rounded-full ${isCheckedIn ? "bg-green-500" : "bg-slate-400"}`}
-      />
-      <span className={isCheckedIn ? "text-green-700" : "text-muted-foreground"}>
-        {isCheckedIn ? "Checked in" : "Checked out"}
-      </span>
+    <span className={`text-sm font-medium ${isCheckedIn ? "text-green-700" : "text-muted-foreground"}`}>
+      {isCheckedIn ? "In" : "Out"}
     </span>
   );
 }
