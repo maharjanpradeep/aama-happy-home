@@ -51,6 +51,8 @@ const Header = () => {
   const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
     if (credentialResponse.credential) {
       login(credentialResponse.credential);
+      setShowLoginDialog(false);
+      navigate("/checkin");
     }
   };
 
@@ -58,6 +60,7 @@ const Header = () => {
     login(token);
     setShowLoginDialog(false);
     setMobileMenuOpen(false);
+    navigate("/checkin");
   };
 
   const scrollToSection = (path: string) => scrollToSectionShared(path, location.pathname, navigate);
@@ -175,7 +178,7 @@ const Header = () => {
                       <X className="w-6 h-6" />
                     </button>
                     <h3 className="text-2xl font-bold mb-4 text-slate-900">Sign In</h3>
-                    <p className="text-slate-600 mb-6">Sign in with your Google account. Parents can check their child in or out; staff can view the admin dashboard.</p>
+                    <p className="text-slate-600 mb-6">Sign in with your Google account. Parents can check their child in or out; admins can view the admin dashboard.</p>
                     <GoogleLogin
                       onSuccess={handleGoogleSuccess}
                       onError={() => console.log('Login Failed')}
