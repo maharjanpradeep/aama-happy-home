@@ -12,6 +12,29 @@ item added or completed, most recent date on top. The category sections further
 down are the stable architecture snapshot and don't get reshuffled._
 
 ## Recent activity & backlog (newest first)
+- [x] (added 2026-07-20, done 2026-07-20) **Embedded Sign In on /checkin; "Sign In" wording everywhere; mobile-friendly Admin Dashboard.**
+  From live prod screenshots: someone landing on `/checkin` fresh (e.g. from
+  the door QR code) saw only text pointing at a header "Login" button that,
+  especially on mobile, is tucked behind a hamburger menu — no visible way
+  to actually sign in from the page itself. Also asked to rename "Login" to
+  "Sign In" everywhere, and noted the Admin Dashboard table needs
+  horizontal scrolling to see all columns on mobile.
+
+  **Confirmed plan (both recommended options):**
+  - `/checkin`'s logged-out state now embeds a real `GoogleLogin` button
+    directly on the page (plus dev-only test sign-in buttons), instead of
+    just text pointing at the header.
+  - Renamed "Login" → "Sign In" on the header's desktop button and the
+    "Test Login: Parent/Admin/Visitor" dev buttons (now "Test Sign In: …").
+  - Admin Dashboard: table stays for `md:` and up; below that, each child
+    renders as a stacked card (name, status, guardians, last event, last
+    note, daily note, expected pickup, actions) — same pattern already used
+    for the parent's check-in list — instead of a horizontally-scrolling
+    table.
+
+  **Verified:** `npm run lint` (0 errors) and `npm run build` pass.
+
+
 - [x] (added 2026-07-20, done 2026-07-20) **Daily note display reflects the backend's new 7-day-reminder behavior for parents.**
   Backend change (see `aama-service-k/feature.md`): parents now see the
   most recent daily note within 7 days, not strictly today's. Since the

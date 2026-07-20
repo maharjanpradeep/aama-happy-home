@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 import {
   RefreshCw,
   Phone,
@@ -48,7 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useAuth } from "@/hooks/auth-context";
+import { useAuth, TEST_PARENT_TOKEN, TEST_ADMIN_TOKEN, TEST_VISITOR_TOKEN } from "@/hooks/auth-context";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { CONTACT_PHONE, defaultInquirySms } from "@/lib/contact";
 import { scrollToSection } from "@/lib/scrollToSection";
@@ -142,7 +143,7 @@ const CheckIn = () => {
     path: "/checkin",
   });
 
-  const { idToken, logout } = useAuth();
+  const { idToken, login, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -449,10 +450,41 @@ const CheckIn = () => {
           <h1 className="text-3xl font-bold mb-8 text-left">My Account</h1>
 
           {!idToken ? (
-            <p className="text-muted-foreground">
-              Use the <span className="font-semibold text-foreground">Login</span> button in the
-              header above to sign in.
-            </p>
+            <Card className="max-w-md">
+              <CardContent className="p-6 space-y-4 text-center">
+                <p className="text-muted-foreground">
+                  Sign in with your Google account to check your child in or out.
+                </p>
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={(credentialResponse: CredentialResponse) => {
+                      if (credentialResponse.credential) {
+                        login(credentialResponse.credential);
+                      }
+                    }}
+                    onError={() => console.log("Sign In Failed")}
+                  />
+                </div>
+                {import.meta.env.DEV && (
+                  <div className="pt-4 border-t border-slate-100 space-y-2">
+                    <p className="text-xs text-slate-400 uppercase tracking-wider font-bold">
+                      Dev only
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => login(TEST_PARENT_TOKEN)}>
+                        Test Sign In: Parent
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => login(TEST_ADMIN_TOKEN)}>
+                        Test Sign In: Admin
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => login(TEST_VISITOR_TOKEN)}>
+                        Test Sign In: Visitor
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           ) : !roleReady ? (
             <div className="space-y-3">
               <Skeleton className="h-10 w-64 rounded-lg" />
@@ -610,109 +642,193 @@ const CheckIn = () => {
                       <Skeleton className="h-12 w-full rounded-lg" />
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Child</TableHead>
-                            <TableHead>Guardians</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Last event</TableHead>
-                            <TableHead>Last note</TableHead>
-                            <TableHead>Daily note</TableHead>
-                            <TableHead>Expected pickup</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {sortedAdminChildren.map((child) => {
-                            const isExpanded =
-                              confirmTarget?.role === "admin" &&
-                              confirmTarget.child.childKey === child.childKey;
-                            const isCheckingIn = child.status !== "checked-in";
-                            return (
-                              <Fragment key={child.childKey}>
-                                <TableRow>
-                                  <TableCell className="font-medium">{child.childName}</TableCell>
-                                  <TableCell className="text-sm">
-                                    {child.guardians
-                                      .map((g) => (g.phone ? `${g.email} (${g.phone})` : g.email))
-                                      .join(", ")}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge variant={child.status === "checked-in" ? "default" : "secondary"}>
-                                      {child.status === "checked-in" ? "Checked in" : "Checked out"}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    {child.lastEventAt ? new Date(child.lastEventAt).toLocaleString() : "—"}
-                                  </TableCell>
-                                  <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
-                                    {child.lastNote || "—"}
-                                  </TableCell>
-                                  <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
-                                    {child.dailyNote || "—"}
-                                  </TableCell>
-                                  <TableCell className="text-sm text-muted-foreground">
-                                    {child.status === "checked-in" && child.expectedPickupTime
-                                      ? formatTimeLabel(child.expectedPickupTime)
-                                      : "—"}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex justify-end gap-1.5 flex-wrap">
-                                      <Button
-                                        size="sm"
-                                        variant={child.status === "checked-in" ? "outline" : "default"}
-                                        disabled={adminActioningKey === child.childKey}
-                                        onClick={() =>
-                                          setConfirmTarget(isExpanded ? null : { child, role: "admin" })
-                                        }
-                                      >
-                                        {adminActioningKey === child.childKey
-                                          ? "Saving..."
-                                          : child.status === "checked-in"
-                                            ? "Check Out"
-                                            : "Check In"}
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => setDailyNoteChild(child)}
-                                        title="Today's note"
-                                      >
-                                        <NotebookPen className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => setEditingChild(child)}
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="text-destructive hover:text-destructive"
-                                        onClick={() => setDeactivatingChild(child)}
-                                      >
-                                        <UserMinus className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                                {isExpanded && (
+                    <>
+                      <div className="hidden md:block overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Child</TableHead>
+                              <TableHead>Guardians</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Last event</TableHead>
+                              <TableHead>Last note</TableHead>
+                              <TableHead>Daily note</TableHead>
+                              <TableHead>Expected pickup</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {sortedAdminChildren.map((child) => {
+                              const isExpanded =
+                                confirmTarget?.role === "admin" &&
+                                confirmTarget.child.childKey === child.childKey;
+                              const isCheckingIn = child.status !== "checked-in";
+                              return (
+                                <Fragment key={child.childKey}>
                                   <TableRow>
-                                    <TableCell colSpan={8} className="bg-muted/30">
-                                      {renderConfirmFields(isCheckingIn, adminActioningKey === child.childKey)}
+                                    <TableCell className="font-medium">{child.childName}</TableCell>
+                                    <TableCell className="text-sm">
+                                      {child.guardians
+                                        .map((g) => (g.phone ? `${g.email} (${g.phone})` : g.email))
+                                        .join(", ")}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant={child.status === "checked-in" ? "default" : "secondary"}>
+                                        {child.status === "checked-in" ? "Checked in" : "Checked out"}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      {child.lastEventAt ? new Date(child.lastEventAt).toLocaleString() : "—"}
+                                    </TableCell>
+                                    <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                                      {child.lastNote || "—"}
+                                    </TableCell>
+                                    <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                                      {child.dailyNote || "—"}
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
+                                      {child.status === "checked-in" && child.expectedPickupTime
+                                        ? formatTimeLabel(child.expectedPickupTime)
+                                        : "—"}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex justify-end gap-1.5 flex-wrap">
+                                        <Button
+                                          size="sm"
+                                          variant={child.status === "checked-in" ? "outline" : "default"}
+                                          disabled={adminActioningKey === child.childKey}
+                                          onClick={() =>
+                                            setConfirmTarget(isExpanded ? null : { child, role: "admin" })
+                                          }
+                                        >
+                                          {adminActioningKey === child.childKey
+                                            ? "Saving..."
+                                            : child.status === "checked-in"
+                                              ? "Check Out"
+                                              : "Check In"}
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => setDailyNoteChild(child)}
+                                          title="Today's note"
+                                        >
+                                          <NotebookPen className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => setEditingChild(child)}
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="text-destructive hover:text-destructive"
+                                          onClick={() => setDeactivatingChild(child)}
+                                        >
+                                          <UserMinus className="h-4 w-4" />
+                                        </Button>
+                                      </div>
                                     </TableCell>
                                   </TableRow>
+                                  {isExpanded && (
+                                    <TableRow>
+                                      <TableCell colSpan={8} className="bg-muted/30">
+                                        {renderConfirmFields(isCheckingIn, adminActioningKey === child.childKey)}
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                </Fragment>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      <div className="md:hidden space-y-3">
+                        {sortedAdminChildren.map((child) => {
+                          const isExpanded =
+                            confirmTarget?.role === "admin" &&
+                            confirmTarget.child.childKey === child.childKey;
+                          const isCheckingIn = child.status !== "checked-in";
+                          return (
+                            <Card key={child.childKey}>
+                              <CardContent className="p-4 space-y-2">
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="font-semibold">{child.childName}</p>
+                                  <Badge variant={child.status === "checked-in" ? "default" : "secondary"}>
+                                    {child.status === "checked-in" ? "Checked in" : "Checked out"}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  Guardians:{" "}
+                                  {child.guardians
+                                    .map((g) => (g.phone ? `${g.email} (${g.phone})` : g.email))
+                                    .join(", ")}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  Last event:{" "}
+                                  {child.lastEventAt ? new Date(child.lastEventAt).toLocaleString() : "—"}
+                                </p>
+                                {child.lastNote && (
+                                  <p className="text-sm text-muted-foreground">Last note: {child.lastNote}</p>
                                 )}
-                              </Fragment>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
+                                {child.dailyNote && (
+                                  <p className="text-sm text-muted-foreground">Daily note: {child.dailyNote}</p>
+                                )}
+                                {child.status === "checked-in" && child.expectedPickupTime && (
+                                  <p className="text-sm text-muted-foreground">
+                                    Expected pickup: {formatTimeLabel(child.expectedPickupTime)}
+                                  </p>
+                                )}
+                                <div className="flex gap-1.5 flex-wrap pt-1">
+                                  <Button
+                                    size="sm"
+                                    variant={child.status === "checked-in" ? "outline" : "default"}
+                                    disabled={adminActioningKey === child.childKey}
+                                    onClick={() =>
+                                      setConfirmTarget(isExpanded ? null : { child, role: "admin" })
+                                    }
+                                  >
+                                    {adminActioningKey === child.childKey
+                                      ? "Saving..."
+                                      : child.status === "checked-in"
+                                        ? "Check Out"
+                                        : "Check In"}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setDailyNoteChild(child)}
+                                    title="Today's note"
+                                  >
+                                    <NotebookPen className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => setEditingChild(child)}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => setDeactivatingChild(child)}
+                                  >
+                                    <UserMinus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                {isExpanded && (
+                                  <div className="border-t pt-3 mt-1">
+                                    {renderConfirmFields(isCheckingIn, adminActioningKey === child.childKey)}
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </>
                   )}
 
                   <div className="mt-8">

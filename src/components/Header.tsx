@@ -164,7 +164,7 @@ const Header = () => {
                 onClick={() => setShowLoginDialog(true)}
               >
                 <UserIcon className="w-4 h-4" />
-                Login
+                Sign In
               </Button>
 
               {/* Hidden Google Login - shown in dialog */}
@@ -190,13 +190,13 @@ const Header = () => {
                           Dev only
                         </span>
                         <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_PARENT_TOKEN)}>
-                          Test Login: Parent
+                          Test Sign In: Parent
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_ADMIN_TOKEN)}>
-                          Test Login: Admin
+                          Test Sign In: Admin
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_VISITOR_TOKEN)}>
-                          Test Login: Visitor
+                          Test Sign In: Visitor
                         </Button>
                       </div>
                     )}
@@ -269,13 +269,13 @@ const Header = () => {
                       Dev only
                     </span>
                     <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_PARENT_TOKEN)}>
-                      Test Login: Parent
+                      Test Sign In: Parent
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_ADMIN_TOKEN)}>
-                      Test Login: Admin
+                      Test Sign In: Admin
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_VISITOR_TOKEN)}>
-                      Test Login: Visitor
+                      Test Sign In: Visitor
                     </Button>
                   </div>
                 )}
