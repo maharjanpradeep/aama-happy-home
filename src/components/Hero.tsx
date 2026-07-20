@@ -75,10 +75,10 @@ const Hero: React.FC<HeroProps> = ({ backToHomeButton }) => {
         </div>
       </div>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 grid md:grid-cols-[1fr_auto] gap-12 items-center min-h-[80vh]">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 grid lg:grid-cols-[1fr_auto] gap-12 items-center min-h-[80vh]">
 
         {/* Main Content (Left/Center) */}
-        <div className="text-center md:text-left mx-auto md:mx-0 max-w-4xl pt-12 md:pt-0">
+        <div className="text-center lg:text-left mx-auto lg:mx-0 max-w-4xl pt-12 lg:pt-0">
           {/* Scarcity Badge (Updated Style) */}
           <div className="inline-flex items-center gap-2 pl-2 pr-4 py-1.5 mb-8 rounded-full bg-white border border-slate-200 shadow-md animate-in fade-in slide-in-from-top-4 duration-1000">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -122,7 +122,7 @@ const Hero: React.FC<HeroProps> = ({ backToHomeButton }) => {
         </div>
 
         {/* Floating Review Sneak Peek (Right Side) */}
-        <div className="hidden md:flex flex-col gap-8 items-end animate-slide-in-right opacity-0" style={{ animationDelay: '0.5s' }}>
+        <div className="hidden lg:flex flex-col gap-8 items-end animate-slide-in-right opacity-0" style={{ animationDelay: '0.5s' }}>
 
           {/* Sneak Peek Card */}
           <div
@@ -186,7 +186,7 @@ const Hero: React.FC<HeroProps> = ({ backToHomeButton }) => {
         </div>
 
         {/* Mobile Stats (Stacked) */}
-        <div className="md:hidden flex justify-center gap-8 text-center pb-12 w-full mt-8">
+        <div className="lg:hidden flex justify-center gap-8 text-center pb-12 w-full mt-8">
           <div className="flex flex-col items-center">
             <span className="text-4xl font-black text-slate-900">10+</span>
             <span className="text-xs uppercase font-bold text-blue-600">Years Exp.</span>

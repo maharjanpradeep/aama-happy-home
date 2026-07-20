@@ -2,6 +2,7 @@ const API_URL = import.meta.env.VITE_CHECKIN_API_URL as string | undefined;
 
 export interface Guardian {
   email: string;
+  name: string;
   phone?: string;
 }
 
@@ -198,6 +199,26 @@ export async function setDailyNote(
       headers: authedJson(idToken),
       body: JSON.stringify({ note }),
     }
+  );
+  return parseResponse(res);
+}
+
+export interface DailyNoteHistoryEntry {
+  date: string;
+  childKey: string;
+  childName: string;
+  note: string;
+  updatedBy: string;
+  updatedAt: string;
+}
+
+export async function fetchDailyNoteHistory(
+  idToken: string,
+  childKey: string
+): Promise<{ notes: DailyNoteHistoryEntry[] }> {
+  const res = await fetch(
+    `${requireApiUrl()}/api/admin/children/${encodeURIComponent(childKey)}/daily-notes`,
+    { headers: { Authorization: `Bearer ${idToken}` } }
   );
   return parseResponse(res);
 }

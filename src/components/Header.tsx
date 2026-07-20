@@ -84,7 +84,7 @@ const Header = () => {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden lg:flex items-center gap-8">
           {navLinks.map((link) => (
             <button
               key={link.name}
@@ -100,7 +100,7 @@ const Header = () => {
         </nav>
 
         {/* Desktop Actions */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden lg:flex items-center gap-4">
           <a href="tel:5107783220" onClick={() => trackCta('call', 'header_desktop')}>
             <Button variant={isScrolled ? "default" : "secondary"} size="sm" className="gap-2 font-bold shadow-lg">
               <Phone className="w-4 h-4" />
@@ -164,7 +164,7 @@ const Header = () => {
                 onClick={() => setShowLoginDialog(true)}
               >
                 <UserIcon className="w-4 h-4" />
-                Login
+                Sign In
               </Button>
 
               {/* Hidden Google Login - shown in dialog */}
@@ -190,13 +190,13 @@ const Header = () => {
                           Dev only
                         </span>
                         <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_PARENT_TOKEN)}>
-                          Test Login: Parent
+                          Test Sign In: Parent
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_ADMIN_TOKEN)}>
-                          Test Login: Admin
+                          Test Sign In: Admin
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_VISITOR_TOKEN)}>
-                          Test Login: Visitor
+                          Test Sign In: Visitor
                         </Button>
                       </div>
                     )}
@@ -208,7 +208,7 @@ const Header = () => {
         </div>
 
         {/* Mobile Menu Toggle */}
-        <div className="md:hidden flex items-center gap-2">
+        <div className="lg:hidden flex items-center gap-2">
           <a href="tel:5107783220" onClick={() => trackCta('call', 'header_mobile')}>
             <div className="p-2 bg-primary text-white rounded-full shadow-lg">
               <Phone className="w-4 h-4" />
@@ -240,7 +240,7 @@ const Header = () => {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="absolute top-full left-0 right-0 bg-white border-t border-slate-100 shadow-xl p-6 flex flex-col gap-4 animate-in slide-in-from-top-2 md:hidden">
+        <div className="absolute top-full left-0 right-0 bg-white border-t border-slate-100 shadow-xl p-6 flex flex-col gap-4 animate-in slide-in-from-top-2 lg:hidden">
           {navLinks.map((link) => (
             <button
               key={link.name}
@@ -269,13 +269,13 @@ const Header = () => {
                       Dev only
                     </span>
                     <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_PARENT_TOKEN)}>
-                      Test Login: Parent
+                      Test Sign In: Parent
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_ADMIN_TOKEN)}>
-                      Test Login: Admin
+                      Test Sign In: Admin
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => handleTestLogin(TEST_VISITOR_TOKEN)}>
-                      Test Login: Visitor
+                      Test Sign In: Visitor
                     </Button>
                   </div>
                 )}

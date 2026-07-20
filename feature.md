@@ -12,6 +12,149 @@ item added or completed, most recent date on top. The category sections further
 down are the stable architecture snapshot and don't get reshuffled._
 
 ## Recent activity & backlog (newest first)
+- [x] (added 2026-07-20, done 2026-07-20) **Guardian name field: collected at enrollment, displayed instead of email.**
+  Backend now stores/requires a guardian name (see
+  `aama-service-k/feature.md`) — email stays for registration but isn't
+  the primary displayed identifier anymore.
+
+  - `EnrollChildDialog`: each guardian row gains a required "Name" field
+    (first, before email/phone); submit and `canSubmit` both require a
+    non-empty name alongside email.
+  - `lib/checkin.ts`'s `Guardian` interface gains `name: string`.
+  - New `formatGuardianLabel(guardian)` helper — shows `name (phone)`,
+    falling back to email for guardians enrolled before this field
+    existed (still blank in the sheet until edited). Used in both the
+    admin desktop table and mobile card guardian lists.
+
+  **Verified:** `npm run lint` (0 errors) and `npm run build` pass.
+  Backend round-trip verified via curl (see `aama-service-k/feature.md`).
+
+
+- [x] (added 2026-07-20, done 2026-07-20) **Drop the tab switcher; status shown as a dot, not a pill; Check In/Out same color.**
+  - Removed the "Check In / Out" / "Admin Dashboard" `Tabs` switcher
+    entirely. Both sections now render stacked on one page (each behind
+    its own `hasChildren`/`isAdmin` check, with a plain `<h2>` heading) —
+    a dual-role user (admin who's also a parent) sees both without
+    clicking anything; a single-role user just sees their one section,
+    no lonely single-tab button to click.
+  - New `StatusIndicator` component: a small colored dot (green when
+    checked in, gray when checked out) + plain text, replacing the
+    solid-pill `Badge` for status in the admin table and admin mobile
+    cards — reads as a status label, not a button.
+  - Admin's Check In/Check Out button no longer switches `variant`
+    (`outline` vs `default`) based on status — always the same style now,
+    matching the parent-side action chip's existing consistent look.
+
+  **Answered:** "What's the Last event column?" — `child.lastEventAt`,
+  the timestamp of the most recent check-in *or* check-out recorded for
+  that child, whichever happened last (regardless of current status).
+
+  **Verified:** `npm run lint` (0 errors) and `npm run build` pass. Not
+  verified in an actual browser — no live browser QA tool available this
+  session; based on the user's description and code review.
+
+
+- [x] (added 2026-07-20, done 2026-07-20) **Admin table polish: fix Actions wrapping, clearer note labels, multi-line notes, daily-note history.**
+  From a live screenshot: the Actions column's 4 controls (Check In/Out +
+  3 icon buttons) wrapped across 3 lines, stretching the whole row tall
+  and leaving other cells oddly positioned within it. "Last note" and
+  "Daily note" column headers were ambiguous about whose note is whose,
+  and both truncated to one line even when a note had multiple lines.
+  Also asked how to view a child's full daily-note history — previously
+  only today's was ever visible anywhere.
+
+  - Actions column: `flex-nowrap` + `items-center` instead of `flex-wrap`,
+    keeping all 4 controls on one line — the row returns to normal height
+    and `TableCell`'s existing `align-middle` centers everything as
+    expected. (Desktop table already scrolls horizontally if this makes
+    it wider than the viewport.)
+  - Renamed columns/labels: "Last note" → "Parent's note", "Daily note" →
+    "My daily note" (table headers and the mobile card labels).
+  - Both note cells switched from `truncate` to `whitespace-pre-line` (a
+    fixed max-width but wraps onto multiple lines and respects real line
+    breaks in the note text, instead of clipping to one line).
+  - `DailyNoteDialog` now also fetches and shows a scrollable "Past notes"
+    list (date + text, newest first) below the editable today's-note
+    textarea, via the new backend history endpoint — user picked this
+    over a separate read-only view.
+
+  **Verified:** `npm run lint` (0 errors) and `npm run build` pass (one
+  transient prerender network hiccup on first build attempt, passed
+  clean on retry — unrelated to these changes). Backend history endpoint
+  curl-verified (see `aama-service-k/feature.md`). Actions/row-height fix
+  and note-wrapping not verified in an actual browser — no live browser
+  QA tool available this session; based on a live screenshot + code
+  review.
+
+
+- [x] (added 2026-07-20, done 2026-07-20) **Fix homepage Hero overflow/overlap at the same mid-range widths.**
+  Same root cause as the header/admin-table fix just above, in a
+  different component: `Hero.tsx`'s two-column layout (headline + the
+  floating review card/stats) switched to `md:grid-cols-[1fr_auto]`
+  (768px) — at that width there isn't room for the 320px review card plus
+  the stat numbers, so they overflowed past the section's `overflow-hidden`
+  boundary and got clipped. The same breakpoint also dropped the left
+  content's top padding (`md:pt-0`) at that width, which combined with
+  the Hero's `min-h-screen`/`items-center` vertical centering let the
+  "Hurry, only 3 spots left" badge render up under the fixed header.
+
+  Fix: bumped the grid split, the review-card visibility, the mobile
+  stats fallback, and the left content's alignment/padding classes all
+  from `md:` to `lg:` (1024px), matching the Header/CheckIn fix — below
+  1024px now consistently gets the single-column stacked layout with its
+  top padding intact.
+
+  **Verified:** `npm run lint` (0 errors) and `npm run build` pass. Not
+  verified in an actual browser at the reported width — no live browser
+  QA tool available this session; based on a live screenshot + reading
+  the component.
+
+
+- [x] (added 2026-07-20, done 2026-07-20) **Fix header/admin-table overflow at mid-range viewport widths (~768–1024px).**
+  From a live screenshot at ~774px: the header showed nav links but no
+  Sign In button, profile avatar, or Directions button, and no hamburger
+  menu either — they'd become genuinely inaccessible, not just needing a
+  scroll. Root cause: `Header.tsx`'s desktop actions bar (Call/Text/
+  Directions/Sign In or avatar) and the mobile hamburger toggle both used
+  Tailwind's `md:` breakpoint (768px), so right above that width the
+  desktop bar switched on without enough room for its own contents, while
+  the hamburger (which holds the same actions on mobile) switched off at
+  the exact same point — a gap with no working entry point to sign in.
+  Same root cause made the Admin Dashboard show a cramped, clipped table
+  at that width instead of switching to the stacked-card layout.
+
+  Fix: bumped both breakpoints from `md:` to `lg:` (1024px) — nav links,
+  desktop actions bar, and the hamburger toggle/overlay in `Header.tsx`;
+  the admin table/card split in `CheckIn.tsx`. Below 1024px now
+  consistently gets the hamburger menu and stacked cards; nothing sits in
+  an ambiguous middle state anymore.
+
+  **Verified:** `npm run lint` (0 errors) and `npm run build` pass.
+
+
+- [x] (added 2026-07-20, done 2026-07-20) **Embedded Sign In on /checkin; "Sign In" wording everywhere; mobile-friendly Admin Dashboard.**
+  From live prod screenshots: someone landing on `/checkin` fresh (e.g. from
+  the door QR code) saw only text pointing at a header "Login" button that,
+  especially on mobile, is tucked behind a hamburger menu — no visible way
+  to actually sign in from the page itself. Also asked to rename "Login" to
+  "Sign In" everywhere, and noted the Admin Dashboard table needs
+  horizontal scrolling to see all columns on mobile.
+
+  **Confirmed plan (both recommended options):**
+  - `/checkin`'s logged-out state now embeds a real `GoogleLogin` button
+    directly on the page (plus dev-only test sign-in buttons), instead of
+    just text pointing at the header.
+  - Renamed "Login" → "Sign In" on the header's desktop button and the
+    "Test Login: Parent/Admin/Visitor" dev buttons (now "Test Sign In: …").
+  - Admin Dashboard: table stays for `md:` and up; below that, each child
+    renders as a stacked card (name, status, guardians, last event, last
+    note, daily note, expected pickup, actions) — same pattern already used
+    for the parent's check-in list — instead of a horizontally-scrolling
+    table.
+
+  **Verified:** `npm run lint` (0 errors) and `npm run build` pass.
+
+
 - [x] (added 2026-07-20, done 2026-07-20) **Daily note display reflects the backend's new 7-day-reminder behavior for parents.**
   Backend change (see `aama-service-k/feature.md`): parents now see the
   most recent daily note within 7 days, not strictly today's. Since the
