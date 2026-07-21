@@ -453,7 +453,12 @@ const CheckIn = () => {
           <Button variant="outline" size="sm" onClick={() => setConfirmTarget(null)} disabled={saving}>
             Cancel
           </Button>
-          <Button size="sm" onClick={handleConfirm} disabled={saving || noteTooLong}>
+          <Button
+            size="sm"
+            className="bg-accent text-accent-foreground hover:bg-accent/90"
+            onClick={handleConfirm}
+            disabled={saving || noteTooLong}
+          >
             {saving ? "Saving..." : hasNote ? `Submit & ${actionLabel}` : actionLabel}
           </Button>
         </div>
@@ -668,7 +673,6 @@ const CheckIn = () => {
                               <TableHead>Child</TableHead>
                               <TableHead>Guardians</TableHead>
                               <TableHead>Status</TableHead>
-                              <TableHead>Last event</TableHead>
                               <TableHead>Parent's note</TableHead>
                               <TableHead>My daily note</TableHead>
                               <TableHead>Expected pickup</TableHead>
@@ -691,15 +695,19 @@ const CheckIn = () => {
                                         .join(", ")}
                                     </TableCell>
                                     <TableCell>
-                                      <StatusIndicator status={child.status} />
+                                      <div className="flex items-center gap-1.5">
+                                        <StatusIndicator status={child.status} />
+                                        {child.lastEventAt && (
+                                          <span className="text-sm text-muted-foreground">
+                                            · {new Date(child.lastEventAt).toLocaleString()}
+                                          </span>
+                                        )}
+                                      </div>
                                     </TableCell>
-                                    <TableCell>
-                                      {child.lastEventAt ? new Date(child.lastEventAt).toLocaleString() : "—"}
-                                    </TableCell>
-                                    <TableCell className="max-w-[220px] whitespace-pre-line break-words text-sm text-muted-foreground">
+                                    <TableCell className="max-w-[220px] whitespace-pre-line break-words text-base text-muted-foreground">
                                       {child.lastNote || "—"}
                                     </TableCell>
-                                    <TableCell className="max-w-[220px] whitespace-pre-line break-words text-sm text-muted-foreground">
+                                    <TableCell className="max-w-[220px] whitespace-pre-line break-words text-base text-muted-foreground">
                                       {child.dailyNote || "—"}
                                     </TableCell>
                                     <TableCell className="text-sm text-muted-foreground">
@@ -711,6 +719,11 @@ const CheckIn = () => {
                                       <div className="flex justify-end items-center gap-1.5 flex-nowrap">
                                         <Button
                                           size="sm"
+                                          className={
+                                            isExpanded
+                                              ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                                              : "bg-accent text-accent-foreground hover:bg-accent/90"
+                                          }
                                           disabled={adminActioningKey === child.childKey}
                                           onClick={() =>
                                             setConfirmTarget(isExpanded ? null : { child, role: "admin" })
@@ -750,7 +763,7 @@ const CheckIn = () => {
                                   </TableRow>
                                   {isExpanded && (
                                     <TableRow>
-                                      <TableCell colSpan={8} className="bg-muted/30">
+                                      <TableCell colSpan={7} className="bg-muted/30">
                                         {renderConfirmFields(isCheckingIn, adminActioningKey === child.childKey)}
                                       </TableCell>
                                     </TableRow>
@@ -773,7 +786,14 @@ const CheckIn = () => {
                               <CardContent className="p-4 space-y-2">
                                 <div className="flex items-center justify-between gap-3">
                                   <p className="font-semibold">{child.childName}</p>
-                                  <StatusIndicator status={child.status} />
+                                  <div className="flex items-center gap-1.5">
+                                    <StatusIndicator status={child.status} />
+                                    {child.lastEventAt && (
+                                      <span className="text-sm text-muted-foreground">
+                                        · {new Date(child.lastEventAt).toLocaleString()}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
                                   Guardians:{" "}
@@ -781,17 +801,13 @@ const CheckIn = () => {
                                     .map((g) => formatGuardianLabel(g))
                                     .join(", ")}
                                 </p>
-                                <p className="text-sm text-muted-foreground">
-                                  Last event:{" "}
-                                  {child.lastEventAt ? new Date(child.lastEventAt).toLocaleString() : "—"}
-                                </p>
                                 {child.lastNote && (
-                                  <p className="text-sm text-muted-foreground whitespace-pre-line">
+                                  <p className="text-base text-muted-foreground whitespace-pre-line">
                                     Parent's note: {child.lastNote}
                                   </p>
                                 )}
                                 {child.dailyNote && (
-                                  <p className="text-sm text-muted-foreground whitespace-pre-line">
+                                  <p className="text-base text-muted-foreground whitespace-pre-line">
                                     My daily note: {child.dailyNote}
                                   </p>
                                 )}
@@ -803,6 +819,11 @@ const CheckIn = () => {
                                 <div className="flex gap-1.5 flex-wrap pt-1">
                                   <Button
                                     size="sm"
+                                    className={
+                                      isExpanded
+                                        ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                                        : "bg-accent text-accent-foreground hover:bg-accent/90"
+                                    }
                                     disabled={adminActioningKey === child.childKey}
                                     onClick={() =>
                                       setConfirmTarget(isExpanded ? null : { child, role: "admin" })
