@@ -312,6 +312,7 @@ const CheckIn = () => {
         address: values.address,
         physicianInfo: values.physicianInfo,
         enrollDate: values.enrollDate || undefined,
+        dob: values.dob,
       });
       toast.success(`${values.childName} enrolled.`);
       await loadAdmin(idToken);
@@ -335,6 +336,7 @@ const CheckIn = () => {
         physicianInfo: values.physicianInfo,
         enrollDate: values.enrollDate || undefined,
         leftDate: values.leftDate || undefined,
+        dob: values.dob || undefined,
       });
       toast.success(`${values.childName} updated.`);
       await loadAdmin(idToken);
@@ -885,6 +887,7 @@ const CheckIn = () => {
                       editingChild
                         ? {
                             childName: editingChild.childName,
+                            dob: editingChild.dob,
                             guardians: editingChild.guardians.map((g) => ({
                               name: g.name,
                               email: g.email,

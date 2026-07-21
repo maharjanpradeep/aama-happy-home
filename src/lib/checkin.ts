@@ -29,6 +29,7 @@ export interface AdminChildStatus extends ChildStatus {
   physicianInfo: string;
   enrollDate: string;
   leftDate: string;
+  dob: string;
 }
 
 export interface EnrollChildInput {
@@ -37,6 +38,7 @@ export interface EnrollChildInput {
   address?: string;
   physicianInfo?: string;
   enrollDate?: string;
+  dob: string;
 }
 
 export interface UpdateChildInput {
@@ -46,6 +48,7 @@ export interface UpdateChildInput {
   guardians?: Guardian[];
   enrollDate?: string;
   leftDate?: string;
+  dob?: string;
 }
 
 export class ApiError extends Error {
@@ -140,6 +143,7 @@ export async function updateChild(
   physicianInfo: string;
   enrollDate: string;
   leftDate: string;
+  dob: string;
   guardians: Guardian[];
 }> {
   const res = await fetch(`${requireApiUrl()}/api/admin/children/${encodeURIComponent(childKey)}`, {
