@@ -21,6 +21,7 @@ export interface GuardianFormValue {
 
 export interface ChildFormValues {
   childName: string;
+  dob: string;
   guardians: GuardianFormValue[];
   address: string;
   physicianInfo: string;
@@ -30,6 +31,7 @@ export interface ChildFormValues {
 
 const EMPTY_VALUES: ChildFormValues = {
   childName: "",
+  dob: "",
   guardians: [{ name: "", email: "", phone: "" }],
   address: "",
   physicianInfo: "",
@@ -102,6 +104,7 @@ const EnrollChildDialog = ({
       await onSubmit({
         ...values,
         childName: values.childName.trim(),
+        dob: values.dob.trim(),
         guardians: values.guardians
           .map((g) => ({ name: g.name.trim(), email: g.email.trim(), phone: g.phone.trim() }))
           .filter((g) => g.email && g.name),
@@ -114,6 +117,7 @@ const EnrollChildDialog = ({
 
   const canSubmit =
     values.childName.trim().length > 0 &&
+    values.dob.trim().length > 0 &&
     values.guardians.some((g) => g.email.trim().length > 0 && g.name.trim().length > 0);
 
   return (
@@ -135,6 +139,17 @@ const EnrollChildDialog = ({
               id="childName"
               value={values.childName}
               onChange={(e) => setValues((v) => ({ ...v, childName: e.target.value }))}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="dob">Date of birth</Label>
+            <Input
+              id="dob"
+              type="date"
+              required
+              value={values.dob}
+              onChange={(e) => setValues((v) => ({ ...v, dob: e.target.value }))}
             />
           </div>
 
