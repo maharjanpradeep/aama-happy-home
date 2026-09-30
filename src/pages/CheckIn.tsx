@@ -76,6 +76,8 @@ import {
   saveScheduledNote,
   deleteScheduledNote,
   acknowledgeNotice,
+  fetchAutoCheckoutTime,
+  saveAutoCheckoutTime,
 } from "@/lib/checkin";
 
 const MAX_NOTE_WORDS = 50;
@@ -196,6 +198,9 @@ const CheckIn = () => {
   const [deactivatingChild, setDeactivatingChild] = useState<AdminChildStatus | null>(null);
   const [dailyNoteChild, setDailyNoteChild] = useState<AdminChildStatus | null>(null);
   const [scheduledNotes, setScheduledNotes] = useState<ScheduledNote[]>([]);
+  const [autoCheckoutTime, setAutoCheckoutTime] = useState("");
+  const [savedAutoCheckoutTime, setSavedAutoCheckoutTime] = useState("");
+  const [savingAutoCheckout, setSavingAutoCheckout] = useState(false);
   // undefined = dialog closed, null = creating, a note = editing it.
   const [scheduleDialogNote, setScheduleDialogNote] = useState<ScheduledNote | null | undefined>(undefined);
 
@@ -399,8 +404,29 @@ const CheckIn = () => {
   }, []);
 
   useEffect(() => {
-    if (isAdmin && idToken) loadScheduledNotes(idToken);
+    if (!isAdmin || !idToken) return;
+    loadScheduledNotes(idToken);
+    fetchAutoCheckoutTime(idToken)
+      .then((res) => {
+        setAutoCheckoutTime(res.autoCheckoutTime);
+        setSavedAutoCheckoutTime(res.autoCheckoutTime);
+      })
+      .catch(() => toast.error("Couldn't load the auto check-out time."));
   }, [isAdmin, idToken, loadScheduledNotes]);
+
+  const handleSaveAutoCheckoutTime = async () => {
+    if (!idToken) return;
+    setSavingAutoCheckout(true);
+    try {
+      const res = await saveAutoCheckoutTime(idToken, autoCheckoutTime);
+      setSavedAutoCheckoutTime(res.autoCheckoutTime);
+      toast.success(`Auto check-out time set to ${formatTimeLabel(res.autoCheckoutTime)}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setSavingAutoCheckout(false);
+    }
+  };
 
   const handleScheduleNoteSubmit = async (input: ScheduledNoteInput) => {
     if (!idToken) return;
@@ -991,6 +1017,36 @@ const CheckIn = () => {
                       </div>
                     </>
                   )}
+
+                  <Card className="mt-8">
+                    <CardContent className="p-4 space-y-2">
+                      <label htmlFor="auto-checkout-time" className="text-lg font-bold block">
+                        Auto check-out time
+                      </label>
+                      <p className="text-sm text-muted-foreground">
+                        Children still checked in at this time are checked out automatically, and
+                        their guardians get an email (admins cc'd).
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="auto-checkout-time"
+                          type="time"
+                          value={autoCheckoutTime}
+                          onChange={(e) => setAutoCheckoutTime(e.target.value)}
+                          className="w-36"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={handleSaveAutoCheckoutTime}
+                          disabled={
+                            savingAutoCheckout || !autoCheckoutTime || autoCheckoutTime === savedAutoCheckoutTime
+                          }
+                        >
+                          {savingAutoCheckout ? "Saving..." : "Save"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   <div className="mt-8 space-y-3">
                     <h3 className="text-lg font-bold">Scheduled notes</h3>

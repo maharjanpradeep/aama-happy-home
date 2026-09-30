@@ -299,3 +299,22 @@ export async function acknowledgeNotice(
   );
   return parseResponse(res);
 }
+
+export async function fetchAutoCheckoutTime(idToken: string): Promise<{ autoCheckoutTime: string }> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/settings`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  return parseResponse(res);
+}
+
+export async function saveAutoCheckoutTime(
+  idToken: string,
+  autoCheckoutTime: string
+): Promise<{ autoCheckoutTime: string }> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/settings`, {
+    method: "PUT",
+    headers: authedJson(idToken),
+    body: JSON.stringify({ autoCheckoutTime }),
+  });
+  return parseResponse(res);
+}
