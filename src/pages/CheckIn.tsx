@@ -12,11 +12,15 @@ import {
   UserMinus,
   NotebookPen,
   StickyNote,
+  CalendarClock,
+  CheckCircle2,
+  Trash2,
 } from "lucide-react";
 import Header from "@/components/Header";
 import DoorSignQrCode from "@/components/DoorSignQrCode";
 import EnrollChildDialog, { ChildFormValues } from "@/components/EnrollChildDialog";
 import DailyNoteDialog from "@/components/DailyNoteDialog";
+import ScheduleNoteDialog from "@/components/ScheduleNoteDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -65,6 +69,13 @@ import {
   adminCheckInChild,
   adminCheckOutChild,
   setDailyNote,
+  todayPacific,
+  ScheduledNote,
+  ScheduledNoteInput,
+  fetchScheduledNotes,
+  saveScheduledNote,
+  deleteScheduledNote,
+  acknowledgeNotice,
 } from "@/lib/checkin";
 
 const MAX_NOTE_WORDS = 50;
@@ -107,6 +118,10 @@ function formatNoteDate(dateStr: string): string {
 
 // Guardian names are only required going forward — older rows enrolled
 // before this field existed have it blank, so fall back to email.
+function formatDateRange(start: string, end: string): string {
+  return start === end ? formatNoteDate(start) : `${formatNoteDate(start)} – ${formatNoteDate(end)}`;
+}
+
 function formatGuardianLabel(guardian: { name: string; email: string; phone?: string }): string {
   const label = guardian.name || guardian.email;
   return guardian.phone ? `${label} (${guardian.phone})` : label;
@@ -180,6 +195,9 @@ const CheckIn = () => {
   const [editingChild, setEditingChild] = useState<AdminChildStatus | null>(null);
   const [deactivatingChild, setDeactivatingChild] = useState<AdminChildStatus | null>(null);
   const [dailyNoteChild, setDailyNoteChild] = useState<AdminChildStatus | null>(null);
+  const [scheduledNotes, setScheduledNotes] = useState<ScheduledNote[]>([]);
+  // undefined = dialog closed, null = creating, a note = editing it.
+  const [scheduleDialogNote, setScheduleDialogNote] = useState<ScheduledNote | null | undefined>(undefined);
 
   const loadAdmin = async (token: string) => {
     setAdminLoading(true);
@@ -371,6 +389,57 @@ const CheckIn = () => {
     }
   };
 
+  const loadScheduledNotes = useCallback(async (token: string) => {
+    try {
+      const res = await fetchScheduledNotes(token);
+      setScheduledNotes(res.notes);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't load scheduled notes.");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAdmin && idToken) loadScheduledNotes(idToken);
+  }, [isAdmin, idToken, loadScheduledNotes]);
+
+  const handleScheduleNoteSubmit = async (input: ScheduledNoteInput) => {
+    if (!idToken) return;
+    try {
+      await saveScheduledNote(idToken, input, scheduleDialogNote?.id);
+      toast.success(scheduleDialogNote ? "Scheduled note updated." : "Note scheduled.");
+      await loadScheduledNotes(idToken);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong.");
+      throw err;
+    }
+  };
+
+  const handleDeleteScheduledNote = async (note: ScheduledNote) => {
+    if (!idToken || !window.confirm(`Delete this scheduled note?\n\n"${note.note}"`)) return;
+    try {
+      await deleteScheduledNote(idToken, note.id);
+      toast.success("Scheduled note deleted.");
+      await loadScheduledNotes(idToken);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  };
+
+  const handleAcknowledge = async (child: ChildStatus, noteId: string) => {
+    if (!idToken) return;
+    setActioningKey(child.childKey);
+    try {
+      const updated = await acknowledgeNotice(idToken, child.childKey, noteId);
+      setChildren((prev) => prev.map((c) => (c.childKey === updated.childKey ? updated : c)));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setActioningKey(null);
+    }
+  };
+
+  const childNameByKey = new Map(adminChildren.map((c) => [c.childKey, c.childName]));
+
   const hasChildren = children.length > 0;
 
   // Descending by expected pickup time; children with none (checked out, or
@@ -390,6 +459,12 @@ const CheckIn = () => {
     const hasNote = confirmNote.trim().length > 0;
     const actionLabel = isCheckingIn ? "Check In" : "Check Out";
     const pickupOptions = generatePickupTimeOptions(eventTime);
+    // Read live state, not the confirmTarget snapshot, so acknowledging unblocks immediately.
+    const needsAck =
+      confirmTarget?.role === "parent" &&
+      !!children
+        .find((c) => c.childKey === confirmTarget.child.childKey)
+        ?.notices?.some((n) => n.blocking);
 
     return (
       <div className="space-y-3">
@@ -451,6 +526,9 @@ const CheckIn = () => {
             </p>
           )}
         </div>
+        {needsAck && (
+          <p className="text-sm text-destructive">Please acknowledge the note above first.</p>
+        )}
         <div className="flex justify-end gap-2">
           <Button variant="outline" size="sm" onClick={() => setConfirmTarget(null)} disabled={saving}>
             Cancel
@@ -459,7 +537,7 @@ const CheckIn = () => {
             size="sm"
             className="bg-accent text-accent-foreground hover:bg-accent/90"
             onClick={handleConfirm}
-            disabled={saving || noteTooLong}
+            disabled={saving || noteTooLong || needsAck}
           >
             {saving ? "Saving..." : hasNote ? `Submit & ${actionLabel}` : actionLabel}
           </Button>
@@ -615,6 +693,41 @@ const CheckIn = () => {
                             </span>
                           </button>
 
+                          {(child.notices ?? []).map((notice) => (
+                            <div key={notice.id} className="px-4 pb-4">
+                              <div
+                                className={`flex gap-2 rounded-md border p-3 text-sm ${
+                                  notice.blocking
+                                    ? "border-destructive/40 bg-destructive/5"
+                                    : "border-primary/20 bg-primary/5"
+                                }`}
+                              >
+                                <CalendarClock className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+                                <div className="flex-1">
+                                  <p className="font-semibold text-foreground">
+                                    Notice for {formatDateRange(notice.startDate, notice.endDate)}
+                                  </p>
+                                  <p className="text-muted-foreground whitespace-pre-line">{notice.note}</p>
+                                  {notice.acknowledgedAt ? (
+                                    <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-green-700">
+                                      <CheckCircle2 className="h-3.5 w-3.5" />
+                                      Acknowledged
+                                    </p>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      className="mt-2"
+                                      disabled={actioningKey === child.childKey}
+                                      onClick={() => handleAcknowledge(child, notice.id)}
+                                    >
+                                      Acknowledge
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
                           {child.dailyNote && (
                             <div className="px-4 pb-4">
                               <div className="flex gap-2 rounded-md border border-primary/20 bg-primary/5 p-3 text-sm">
@@ -648,6 +761,15 @@ const CheckIn = () => {
                     <Button size="sm" onClick={() => setEnrollOpen(true)} className="gap-1.5">
                       <UserPlus className="h-4 w-4" />
                       Enroll Child
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setScheduleDialogNote(null)}
+                      className="gap-1.5 mr-auto"
+                    >
+                      <CalendarClock className="h-4 w-4" />
+                      Schedule Note
                     </Button>
                     <Button
                       variant="outline"
@@ -870,6 +992,66 @@ const CheckIn = () => {
                     </>
                   )}
 
+                  <div className="mt-8 space-y-3">
+                    <h3 className="text-lg font-bold">Scheduled notes</h3>
+                    {scheduledNotes.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No scheduled notes.</p>
+                    ) : (
+                      scheduledNotes.map((note) => (
+                        <Card key={note.id}>
+                          <CardContent className="p-4 space-y-2">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="font-semibold">
+                                  {formatDateRange(note.startDate, note.endDate)}
+                                  {note.endDate < todayPacific() && (
+                                    <span className="ml-2 text-xs font-normal text-muted-foreground">Ended</span>
+                                  )}
+                                </p>
+                                <p className="text-muted-foreground whitespace-pre-line">{note.note}</p>
+                              </div>
+                              <div className="flex shrink-0 gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Edit scheduled note"
+                                  onClick={() => setScheduleDialogNote(note)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Delete scheduled note"
+                                  onClick={() => handleDeleteScheduledNote(note)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            <ul className="text-sm space-y-0.5">
+                              {note.childKeys.map((childKey) => {
+                                const ack = note.acks.find((a) => a.childKey === childKey);
+                                return (
+                                  <li key={childKey} className="flex flex-wrap gap-x-2">
+                                    <span className="font-medium">{childNameByKey.get(childKey) ?? childKey}</span>
+                                    {ack ? (
+                                      <span className="text-green-700">
+                                        ✓ {ack.parentEmail} · {formatEventTime(ack.acknowledgedAt)}
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground">Not acknowledged</span>
+                                    )}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+
                   <div className="mt-8">
                     <DoorSignQrCode />
                   </div>
@@ -901,6 +1083,14 @@ const CheckIn = () => {
                         : undefined
                     }
                     onSubmit={handleEditSubmit}
+                  />
+
+                  <ScheduleNoteDialog
+                    open={scheduleDialogNote !== undefined}
+                    onOpenChange={(open) => !open && setScheduleDialogNote(undefined)}
+                    childOptions={adminChildren}
+                    initialValues={scheduleDialogNote ?? undefined}
+                    onSubmit={handleScheduleNoteSubmit}
                   />
 
                   <DailyNoteDialog

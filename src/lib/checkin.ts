@@ -15,6 +15,31 @@ export interface ChildStatus {
   dailyNote: string | null;
   dailyNoteDate: string | null;
   expectedPickupTime: string | null;
+  notices: ChildNotice[];
+}
+
+export interface ChildNotice {
+  id: string;
+  note: string;
+  startDate: string;
+  endDate: string;
+  acknowledgedAt: string | null;
+  acknowledgedBy: string | null;
+  blocking: boolean;
+}
+
+export interface ScheduledNoteInput {
+  note: string;
+  startDate: string;
+  endDate: string;
+  childKeys: string[];
+}
+
+export interface ScheduledNote extends ScheduledNoteInput {
+  id: string;
+  updatedBy: string;
+  updatedAt: string;
+  acks: { childKey: string; parentEmail: string; acknowledgedAt: string }[];
 }
 
 export interface CheckActionOptions {
@@ -49,6 +74,11 @@ export interface UpdateChildInput {
   enrollDate?: string;
   leftDate?: string;
   dob?: string;
+}
+
+// Daycare runs on Pacific time — matches the backend's toPacificDate.
+export function todayPacific(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
 }
 
 export class ApiError extends Error {
@@ -223,6 +253,49 @@ export async function fetchDailyNoteHistory(
   const res = await fetch(
     `${requireApiUrl()}/api/admin/children/${encodeURIComponent(childKey)}/daily-notes`,
     { headers: { Authorization: `Bearer ${idToken}` } }
+  );
+  return parseResponse(res);
+}
+
+export async function fetchScheduledNotes(idToken: string): Promise<{ notes: ScheduledNote[] }> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/scheduled-notes`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  return parseResponse(res);
+}
+
+export async function saveScheduledNote(
+  idToken: string,
+  input: ScheduledNoteInput,
+  id?: string
+): Promise<ScheduledNote> {
+  const res = await fetch(
+    `${requireApiUrl()}/api/admin/scheduled-notes${id ? `/${encodeURIComponent(id)}` : ""}`,
+    {
+      method: id ? "PUT" : "POST",
+      headers: authedJson(idToken),
+      body: JSON.stringify(input),
+    }
+  );
+  return parseResponse(res);
+}
+
+export async function deleteScheduledNote(idToken: string, id: string): Promise<void> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/scheduled-notes/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  return parseResponse(res);
+}
+
+export async function acknowledgeNotice(
+  idToken: string,
+  childKey: string,
+  noteId: string
+): Promise<ChildStatus> {
+  const res = await fetch(
+    `${requireApiUrl()}/api/children/${encodeURIComponent(childKey)}/notices/${encodeURIComponent(noteId)}/ack`,
+    { method: "POST", headers: { Authorization: `Bearer ${idToken}` } }
   );
   return parseResponse(res);
 }
