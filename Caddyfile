@@ -1,0 +1,10 @@
+# Railway sets PORT. Prerendered routes (react-snap) are served as-is; any
+# other path falls back to the SPA shell.
+:{$PORT:8080} {
+	root * /srv
+	encode gzip
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	try_files {path}/index.html {path} /index.html
+	file_server
+}
