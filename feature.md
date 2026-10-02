@@ -748,5 +748,5 @@ down are the stable architecture snapshot and don't get reshuffled._
 ## Build & deploy
 - [x] Vite + React + TypeScript, shadcn-ui + Tailwind CSS (`src/components/ui/`)
 - [x] `react-router-dom` (`BrowserRouter basename="/"`), `@tanstack/react-query`
-- [x] Deployed to Hostinger via GitHub Actions (`.github/workflows/ci-cd.yml`)
+- [x] ~~Deployed to Hostinger via GitHub Actions~~ — moved to Railway (Dockerfile + Caddy) in Oct 2026; `.github/workflows/ci-cd.yml` now only lints and builds
   on push to `main`; CI runs lint + build
