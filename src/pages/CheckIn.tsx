@@ -76,8 +76,9 @@ import {
   saveScheduledNote,
   deleteScheduledNote,
   acknowledgeNotice,
-  fetchAutoCheckoutTime,
-  saveAutoCheckoutTime,
+  CheckoutSettings,
+  fetchCheckoutSettings,
+  saveCheckoutSettings,
 } from "@/lib/checkin";
 
 const MAX_NOTE_WORDS = 50;
@@ -198,9 +199,9 @@ const CheckIn = () => {
   const [deactivatingChild, setDeactivatingChild] = useState<AdminChildStatus | null>(null);
   const [dailyNoteChild, setDailyNoteChild] = useState<AdminChildStatus | null>(null);
   const [scheduledNotes, setScheduledNotes] = useState<ScheduledNote[]>([]);
-  const [autoCheckoutTime, setAutoCheckoutTime] = useState("");
-  const [savedAutoCheckoutTime, setSavedAutoCheckoutTime] = useState("");
-  const [savingAutoCheckout, setSavingAutoCheckout] = useState(false);
+  const [checkoutSettings, setCheckoutSettings] = useState<CheckoutSettings>({ alertTime: "", autoCheckoutTime: "" });
+  const [savedCheckoutSettings, setSavedCheckoutSettings] = useState<CheckoutSettings | null>(null);
+  const [savingCheckoutSettings, setSavingCheckoutSettings] = useState(false);
   // undefined = dialog closed, null = creating, a note = editing it.
   const [scheduleDialogNote, setScheduleDialogNote] = useState<ScheduledNote | null | undefined>(undefined);
 
@@ -406,25 +407,27 @@ const CheckIn = () => {
   useEffect(() => {
     if (!isAdmin || !idToken) return;
     loadScheduledNotes(idToken);
-    fetchAutoCheckoutTime(idToken)
+    fetchCheckoutSettings(idToken)
       .then((res) => {
-        setAutoCheckoutTime(res.autoCheckoutTime);
-        setSavedAutoCheckoutTime(res.autoCheckoutTime);
+        setCheckoutSettings(res);
+        setSavedCheckoutSettings(res);
       })
-      .catch(() => toast.error("Couldn't load the auto check-out time."));
+      .catch(() => toast.error("Couldn't load the check-out alert and auto check-out times."));
   }, [isAdmin, idToken, loadScheduledNotes]);
 
-  const handleSaveAutoCheckoutTime = async () => {
+  const handleSaveCheckoutSettings = async () => {
     if (!idToken) return;
-    setSavingAutoCheckout(true);
+    setSavingCheckoutSettings(true);
     try {
-      const res = await saveAutoCheckoutTime(idToken, autoCheckoutTime);
-      setSavedAutoCheckoutTime(res.autoCheckoutTime);
-      toast.success(`Auto check-out time set to ${formatTimeLabel(res.autoCheckoutTime)}.`);
+      const res = await saveCheckoutSettings(idToken, checkoutSettings);
+      setSavedCheckoutSettings(res);
+      toast.success(
+        `Check-out alert at ${formatTimeLabel(res.alertTime)}, auto check-out at ${formatTimeLabel(res.autoCheckoutTime)}.`
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
-      setSavingAutoCheckout(false);
+      setSavingCheckoutSettings(false);
     }
   };
 
@@ -1020,31 +1023,57 @@ const CheckIn = () => {
 
                   <Card className="mt-8">
                     <CardContent className="p-4 space-y-2">
-                      <label htmlFor="auto-checkout-time" className="text-lg font-bold block">
-                        Auto check-out time
-                      </label>
+                      <h3 className="text-lg font-bold">Check-out alert &amp; auto check-out</h3>
                       <p className="text-sm text-muted-foreground">
-                        Children still checked in at this time are checked out automatically, and
-                        their guardians get an email (admins cc'd).
+                        Guardians of children still checked in get an alert email at the alert time
+                        asking them to check out in the app. At the auto check-out time, those children are checked out and
+                        guardians get a follow-up in the same email thread. Admins are cc'd.
                       </p>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          id="auto-checkout-time"
-                          type="time"
-                          value={autoCheckoutTime}
-                          onChange={(e) => setAutoCheckoutTime(e.target.value)}
-                          className="w-36"
-                        />
+                      <div className="flex flex-wrap items-end gap-3">
+                        <div className="space-y-1">
+                          <label htmlFor="checkout-alert-time" className="text-xs text-muted-foreground block">
+                            Check-out alert
+                          </label>
+                          <Input
+                            id="checkout-alert-time"
+                            type="time"
+                            value={checkoutSettings.alertTime}
+                            onChange={(e) => setCheckoutSettings((s) => ({ ...s, alertTime: e.target.value }))}
+                            className="w-36"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label htmlFor="auto-checkout-time" className="text-xs text-muted-foreground block">
+                            Auto check-out
+                          </label>
+                          <Input
+                            id="auto-checkout-time"
+                            type="time"
+                            value={checkoutSettings.autoCheckoutTime}
+                            onChange={(e) => setCheckoutSettings((s) => ({ ...s, autoCheckoutTime: e.target.value }))}
+                            className="w-36"
+                          />
+                        </div>
                         <Button
                           size="sm"
-                          onClick={handleSaveAutoCheckoutTime}
+                          onClick={handleSaveCheckoutSettings}
                           disabled={
-                            savingAutoCheckout || !autoCheckoutTime || autoCheckoutTime === savedAutoCheckoutTime
+                            savingCheckoutSettings ||
+                            !checkoutSettings.alertTime ||
+                            !checkoutSettings.autoCheckoutTime ||
+                            checkoutSettings.alertTime >= checkoutSettings.autoCheckoutTime ||
+                            (checkoutSettings.alertTime === savedCheckoutSettings?.alertTime &&
+                              checkoutSettings.autoCheckoutTime === savedCheckoutSettings?.autoCheckoutTime)
                           }
                         >
-                          {savingAutoCheckout ? "Saving..." : "Save"}
+                          {savingCheckoutSettings ? "Saving..." : "Save"}
                         </Button>
                       </div>
+                      {checkoutSettings.alertTime &&
+                        checkoutSettings.autoCheckoutTime &&
+                        checkoutSettings.alertTime >= checkoutSettings.autoCheckoutTime && (
+                          <p className="text-sm text-destructive">The check-out alert must be before the auto check-out time.</p>
+                        )}
                     </CardContent>
                   </Card>
 
