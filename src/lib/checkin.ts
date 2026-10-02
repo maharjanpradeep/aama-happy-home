@@ -300,21 +300,27 @@ export async function acknowledgeNotice(
   return parseResponse(res);
 }
 
-export async function fetchAutoCheckoutTime(idToken: string): Promise<{ autoCheckoutTime: string }> {
+// HH:MM, Pacific. alertTime must be before autoCheckoutTime.
+export interface CheckoutSettings {
+  alertTime: string;
+  autoCheckoutTime: string;
+}
+
+export async function fetchCheckoutSettings(idToken: string): Promise<CheckoutSettings> {
   const res = await fetch(`${requireApiUrl()}/api/admin/settings`, {
     headers: { Authorization: `Bearer ${idToken}` },
   });
   return parseResponse(res);
 }
 
-export async function saveAutoCheckoutTime(
+export async function saveCheckoutSettings(
   idToken: string,
-  autoCheckoutTime: string
-): Promise<{ autoCheckoutTime: string }> {
+  settings: CheckoutSettings
+): Promise<CheckoutSettings> {
   const res = await fetch(`${requireApiUrl()}/api/admin/settings`, {
     method: "PUT",
     headers: authedJson(idToken),
-    body: JSON.stringify({ autoCheckoutTime }),
+    body: JSON.stringify(settings),
   });
   return parseResponse(res);
 }
