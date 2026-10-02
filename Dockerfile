@@ -1,5 +1,4 @@
-# Railway deploy for the frontend. Hostinger still deploys via GitHub Actions
-# (FTP); this file only matters to Railway.
+# Railway builds and deploys the frontend from this file on every push to main.
 
 FROM node:20-bookworm-slim AS build
 # System libraries for the Chromium that react-snap (postbuild prerender) bundles.

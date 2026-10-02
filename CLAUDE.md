@@ -5,7 +5,8 @@ Guidance for AI assistants working in this repo (Aama Daycare marketing site).
 ## What this is
 
 React + Vite + TypeScript site for [aamadaycare.com](https://aamadaycare.com).
-Deployed to Hostinger via GitHub Actions on push to `main`.
+Deployed to Railway (Dockerfile + Caddy) on push to `main`; GitHub Actions only
+runs lint + build. DNS is on Cloudflare (domain registered at GoDaddy).
 
 ## Git workflow (required)
 
@@ -35,7 +36,8 @@ Resolve conflicts, then push and open the PR targeting `main`.
 ### Commits and deploy
 
 - Do not commit `.env` (gitignored). Use `.env.example` for documented vars.
-- Production secrets (e.g. `VITE_GA_MEASUREMENT_ID`, FTP) live in GitHub Actions secrets.
+- Production build variables (`VITE_CHECKIN_API_URL`, `VITE_GA_MEASUREMENT_ID`) live in the
+  Railway service's Variables (and in GitHub Actions secrets for the CI build check).
 - CI **Build** must pass before merge if branch protection is enabled.
 
 ## Key paths
