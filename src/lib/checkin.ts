@@ -324,3 +324,38 @@ export async function saveCheckoutSettings(
   });
   return parseResponse(res);
 }
+
+// Social posts: admins upload edited photos to the Drive folder; each new one
+// is captioned by AI and posted to Facebook, Instagram and Google automatically (hourly,
+// or right away with "Check Drive now").
+export type SocialPlatformResult = "ok" | "error" | "off" | "dry-run";
+
+export interface RecentSocialPhoto {
+  id: string;
+  name: string;
+  caption: string;
+  status: "posted" | "failed";
+  facebook: SocialPlatformResult | null;
+  instagram: SocialPlatformResult | null;
+  google: SocialPlatformResult | null;
+  updatedAt: string;
+}
+
+export type SocialOverview =
+  | { enabled: false }
+  | { enabled: true; recent: RecentSocialPhoto[]; waiting: number; unsupported: string[] };
+
+export async function fetchSocialOverview(idToken: string): Promise<SocialOverview> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/social`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  return parseResponse(res);
+}
+
+export async function scanSocialPhotos(idToken: string): Promise<SocialOverview & { posted: number }> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/social/scan`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  return parseResponse(res);
+}
