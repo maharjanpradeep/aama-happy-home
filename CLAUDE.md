@@ -40,6 +40,25 @@ Resolve conflicts, then push and open the PR targeting `main`.
   Railway service's Variables (and in GitHub Actions secrets for the CI build check).
 - CI **Build** must pass before merge if branch protection is enabled.
 
+## Secrets — never print them (especially production)
+
+Never show a secret value anywhere: not in replies, and not in tool output either
+(tool output is shown in the terminal, saved to the session transcript and sent to
+the model provider). Secrets include API keys, tokens (`FB_PAGE_TOKEN`, OAuth
+refresh tokens, Page tokens), service-account private keys, passwords and URLs
+with credentials — in `.env`, Railway Variables, GitHub secrets, or any API response.
+
+- Never run commands that dump config: no `cat .env`, `printenv`/`env`,
+  `railway variables` (list), unfiltered `railway status --json`, or anything that
+  echoes a variable's value. List variable *names* only, with values replaced.
+- Use a secret only inside the command that needs it (read it from the
+  environment within the script); print only non-secret results (status codes,
+  IDs, names, `true/false`).
+- Ask what a command will *print* before running it against production. Read
+  production narrowly; never change production (Railway Variables, the Sheet,
+  live posts) unless the user asked for that specific change.
+- If a secret is ever printed, say so immediately, name it, and offer to rotate it.
+
 ## Key paths
 
 - `src/components/` — UI (Header, Contact, Hero, etc.)

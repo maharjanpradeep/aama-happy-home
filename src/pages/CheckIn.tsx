@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import DoorSignQrCode from "@/components/DoorSignQrCode";
+import SocialPostsCard from "@/components/SocialPostsCard";
 import EnrollChildDialog, { ChildFormValues } from "@/components/EnrollChildDialog";
 import DailyNoteDialog from "@/components/DailyNoteDialog";
 import ScheduleNoteDialog from "@/components/ScheduleNoteDialog";
@@ -1076,6 +1077,8 @@ const CheckIn = () => {
                         )}
                     </CardContent>
                   </Card>
+
+                  {idToken && <SocialPostsCard idToken={idToken} />}
 
                   <div className="mt-8 space-y-3">
                     <h3 className="text-lg font-bold">Scheduled notes</h3>
