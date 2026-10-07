@@ -9,6 +9,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './hooks/auth-context';
 import Schedule from './pages/Schedule';
 import CheckIn from './pages/CheckIn';
+import Privacy from './pages/Privacy';
 import AIChatbot from './components/AIChatbot';
 import PageAnalytics from './components/PageAnalytics';
 
@@ -27,6 +28,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/checkin" element={<CheckIn />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="/checkin-admin" element={<Navigate to="/checkin" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

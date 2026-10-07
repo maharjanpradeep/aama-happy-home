@@ -21,7 +21,8 @@
       "/",
       "/schedule",
       "/checkin",
-      "/checkin-admin"
+      "/checkin-admin",
+      "/privacy"
     ],
     "inlineCss": false,
     "skipThirdPartyRequests": true,
