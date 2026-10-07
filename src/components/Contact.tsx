@@ -195,6 +195,12 @@ const Contact = () => {
 
             </div>
           </div>
+          <p className="mt-12 text-center text-sm text-muted-foreground">
+            &copy; {new Date().getFullYear()} Aama Day Care Center ·{" "}
+            <Link to="/privacy" className="underline hover:text-foreground">
+              Privacy Policy
+            </Link>
+          </p>
         </div>
       </section>
     </main>
