@@ -734,10 +734,7 @@ const CheckIn = () => {
                               >
                                 <CalendarClock className="h-4 w-4 shrink-0 text-primary mt-0.5" />
                                 <div className="flex-1">
-                                  <p className="font-semibold text-foreground">
-                                    Notice for {formatDateRange(notice.startDate, notice.endDate)}
-                                  </p>
-                                  <p className="text-muted-foreground whitespace-pre-line">{notice.note}</p>
+                                  <p className="text-foreground whitespace-pre-line">{notice.note}</p>
                                   {notice.acknowledgedAt ? (
                                     <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-green-700">
                                       <CheckCircle2 className="h-3.5 w-3.5" />
