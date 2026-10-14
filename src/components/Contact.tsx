@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { MapPin, Phone, Mail, Clock, Send } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Send, Facebook, Instagram } from "lucide-react";
 import { useAuth } from "@/hooks/auth-context";
 import { GoogleLogin } from '@react-oauth/google';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CONTACT_EMAIL, CONTACT_PHONE, defaultInquiryMailto, directionsUrl } from '@/lib/contact';
 import { trackCta } from '@/lib/analytics';
+import { SOCIAL_URLS } from '@/lib/social';
 
 const Contact = () => {
   const { user, login, logout } = useAuth();
@@ -127,6 +128,37 @@ const Contact = () => {
                       allowFullScreen
                       loading="lazy"
                     ></iframe>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-md bg-white">
+                <CardContent className="p-6 flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-bold text-lg">Follow us</h3>
+                    <p className="text-slate-500 text-sm">See what the kids are up to every week.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <a
+                      href={SOCIAL_URLS.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Aama Daycare on Facebook"
+                      onClick={() => trackCta('facebook', 'contact_follow')}
+                      className="w-12 h-12 rounded-full bg-[#1877F2] text-white flex items-center justify-center hover:opacity-90 transition-opacity"
+                    >
+                      <Facebook className="w-6 h-6" />
+                    </a>
+                    <a
+                      href={SOCIAL_URLS.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Aama Daycare on Instagram"
+                      onClick={() => trackCta('instagram', 'contact_follow')}
+                      className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white flex items-center justify-center hover:opacity-90 transition-opacity"
+                    >
+                      <Instagram className="w-6 h-6" />
+                    </a>
                   </div>
                 </CardContent>
               </Card>

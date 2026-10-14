@@ -1,4 +1,4 @@
-export type CtaAction = 'call' | 'text' | 'directions' | 'email' | 'inquiry_submit';
+export type CtaAction = 'call' | 'text' | 'directions' | 'email' | 'inquiry_submit' | 'facebook' | 'instagram';
 
 const MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID?.trim();
 const IS_DEV = import.meta.env.DEV;

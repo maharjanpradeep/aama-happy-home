@@ -359,3 +359,109 @@ export async function scanSocialPhotos(idToken: string): Promise<SocialOverview 
   });
   return parseResponse(res);
 }
+
+export interface ReviewLink {
+  platforms: string[];
+  draft: string;
+  expiresAt: string;
+}
+
+export interface AdminReviewLink {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+  platforms: string[];
+  draft: string;
+  notes: string;
+  createdBy: string;
+  status: "active" | "disabled";
+  redrafts: number;
+}
+
+export async function createReviewLink(
+  idToken: string,
+  platforms: string[],
+  draft: string,
+  notes: string
+): Promise<AdminReviewLink> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/review-links`, {
+    method: "POST",
+    headers: authedJson(idToken),
+    body: JSON.stringify({ platforms, draft, notes }),
+  });
+  return parseResponse(res);
+}
+
+export async function listReviewLinks(idToken: string): Promise<{ links: AdminReviewLink[] }> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/review-links`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  return parseResponse(res);
+}
+
+export async function setReviewLinkStatus(idToken: string, id: string, status: "active" | "disabled"): Promise<void> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/review-links/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: authedJson(idToken),
+    body: JSON.stringify({ status }),
+  });
+  return parseResponse(res);
+}
+
+export async function deleteReviewLink(idToken: string, id: string): Promise<void> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/review-links/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  return parseResponse(res);
+}
+
+// Public (no sign-in): what /review/:id shows.
+export async function fetchReviewLink(token: string): Promise<ReviewLink | { expired: true; platforms: string[] }> {
+  const res = await fetch(`${requireApiUrl()}/api/review-links/${encodeURIComponent(token)}`);
+  return parseResponse(res);
+}
+
+export async function redraftReviewLink(token: string): Promise<{ draft: string; remaining: number }> {
+  const res = await fetch(`${requireApiUrl()}/api/review-links/${encodeURIComponent(token)}/draft`, { method: "POST" });
+  return parseResponse(res);
+}
+
+export async function fetchReviewTopics(idToken: string): Promise<{ topics: string[] }> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/review-topics`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  return parseResponse(res);
+}
+
+export async function refreshReviewTopics(idToken: string): Promise<{ topics: string[] }> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/review-topics`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  return parseResponse(res);
+}
+
+export async function fetchReviewDraft(idToken: string, notes: string): Promise<{ draft: string }> {
+  const res = await fetch(`${requireApiUrl()}/api/admin/review-draft`, {
+    method: "POST",
+    headers: authedJson(idToken),
+    body: JSON.stringify({ notes }),
+  });
+  return parseResponse(res);
+}
+
+export interface LatestPost {
+  id: string;
+  caption: string;
+  postedAt: string;
+  photoUrl: string;
+}
+
+// Public: the most recent social posts, for the homepage strip.
+export async function fetchLatestPosts(): Promise<LatestPost[]> {
+  const base = requireApiUrl();
+  const res = await fetch(`${base}/api/social/latest`);
+  const { posts } = await parseResponse<{ posts: LatestPost[] }>(res);
+  return posts.map((p) => ({ ...p, photoUrl: `${base}${p.photoUrl}` }));
+}

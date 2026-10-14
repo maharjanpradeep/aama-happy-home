@@ -1,5 +1,8 @@
 import React from 'react';
-import { Star } from "lucide-react";
+import { ExternalLink, Star } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { SOCIAL_URLS } from "@/lib/social";
 import {
     Carousel,
     CarouselContent,
@@ -57,7 +60,7 @@ const Testimonials = () => {
                                                     <span className="absolute -top-4 -left-2 text-6xl text-primary/10 font-serif leading-none">"</span>
                                                     <span className="relative z-10 text-base">{review.text.length > 180 ? `${review.text.substring(0, 180)}...` : review.text}</span>
                                                     {review.text.length > 180 && (
-                                                        <a href="https://www.yelp.com/biz/aama-day-care-san-ramon-2" target="_blank" rel="noopener noreferrer" className="ml-1 text-primary hover:underline text-sm font-medium">Read more</a>
+                                                        <a href={SOCIAL_URLS.yelp} target="_blank" rel="noopener noreferrer" className="ml-1 text-primary hover:underline text-sm font-medium">Read more</a>
                                                     )}
                                                 </blockquote>
 
@@ -84,34 +87,24 @@ const Testimonials = () => {
                     </Carousel>
                 </div>
 
-                {/* Call to Action */}
-                <div className="text-center mt-12">
-                    <a
-                        href="https://www.yelp.com/biz/aama-day-care-san-ramon-2"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-medium border-b border-transparent hover:border-primary pb-0.5"
-                    >
-                        <span>See more reviews on Yelp</span>
-                        <ExternalLink className="w-4 h-4 relative top-[1px]" />
-                    </a>
+                <div className="text-center mt-12 space-y-4">
+                    <p className="text-muted-foreground font-medium">
+                        More reviews on{" "}
+                        <a href={SOCIAL_URLS.google} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                            Google <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                        {" · "}
+                        <a href={SOCIAL_URLS.yelp} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                            Yelp <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                    </p>
+                    <Button asChild size="lg" className="rounded-full font-bold">
+                        <Link to="/review">Leave us a review</Link>
+                    </Button>
                 </div>
             </div>
-
-            {/* Missing import simulation for icon */}
-            <style>{`
-        /* Since we didn't import ExternalLink inside the component definition string above, 
-           we need to make sure it's valid code or fix it in post. 
-           Wait, I did not import ExternalLink in the import block.
-           Function body uses ExternalLink.
-           I must ensure I add the import.
-        */
-      `}</style>
         </section>
     );
 };
-
-// Fix the missing import in the actual file write
-import { ExternalLink } from "lucide-react";
 
 export default Testimonials;
