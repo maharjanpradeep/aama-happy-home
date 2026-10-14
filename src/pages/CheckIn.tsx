@@ -17,8 +17,8 @@ import {
   Trash2,
 } from "lucide-react";
 import Header from "@/components/Header";
+import AdminTabs from "@/components/AdminTabs";
 import DoorSignQrCode from "@/components/DoorSignQrCode";
-import SocialPostsCard from "@/components/SocialPostsCard";
 import EnrollChildDialog, { ChildFormValues } from "@/components/EnrollChildDialog";
 import DailyNoteDialog from "@/components/DailyNoteDialog";
 import ScheduleNoteDialog from "@/components/ScheduleNoteDialog";
@@ -584,6 +584,7 @@ const CheckIn = () => {
       <main className="pt-24 pb-16">
         <div className="max-w-5xl mx-auto px-6">
           <h1 className="text-3xl font-bold mb-8 text-left">My Account</h1>
+          {idToken && isAdmin && <AdminTabs />}
 
           {!idToken ? (
             <Card className="max-w-md">
@@ -783,7 +784,6 @@ const CheckIn = () => {
 
               {isAdmin && (
                 <div>
-                  <h2 className="text-xl font-bold mb-4">Admin Dashboard</h2>
                   <div className="flex items-center justify-between mb-4 gap-2">
                     <Button size="sm" onClick={() => setEnrollOpen(true)} className="gap-1.5">
                       <UserPlus className="h-4 w-4" />
@@ -1074,8 +1074,6 @@ const CheckIn = () => {
                         )}
                     </CardContent>
                   </Card>
-
-                  {idToken && <SocialPostsCard idToken={idToken} />}
 
                   <div className="mt-8 space-y-3">
                     <h3 className="text-lg font-bold">Scheduled notes</h3>

@@ -10,6 +10,8 @@ import { AuthProvider } from './hooks/auth-context';
 import Schedule from './pages/Schedule';
 import CheckIn from './pages/CheckIn';
 import Privacy from './pages/Privacy';
+import Review from './pages/Review';
+import AdminSocial from './pages/AdminSocial';
 import AIChatbot from './components/AIChatbot';
 import PageAnalytics from './components/PageAnalytics';
 
@@ -29,6 +31,9 @@ const App = () => (
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/checkin" element={<CheckIn />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/review" element={<Review />} />
+              <Route path="/review/:token" element={<Review />} />
+              <Route path="/admin/social" element={<AdminSocial />} />
               <Route path="/checkin-admin" element={<Navigate to="/checkin" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

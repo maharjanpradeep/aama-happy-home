@@ -44,10 +44,20 @@ const SocialPostsCard = ({ idToken }: { idToken: string }) => {
     }
   };
 
-  if (!overview?.enabled) return null;
+  if (!overview) return null;
+  if (!overview.enabled) {
+    return (
+      <Card>
+        <CardContent className="p-4 space-y-1">
+          <h3 className="text-lg font-bold">Social posts</h3>
+          <p className="text-sm text-muted-foreground">Automatic posting is turned off.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className="mt-8">
+    <Card>
       <CardContent className="p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-lg font-bold">Social posts</h3>
