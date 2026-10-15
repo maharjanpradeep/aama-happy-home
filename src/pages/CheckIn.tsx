@@ -21,6 +21,7 @@ import AdminTabs from "@/components/AdminTabs";
 import DoorSignQrCode from "@/components/DoorSignQrCode";
 import EnrollChildDialog, { ChildFormValues } from "@/components/EnrollChildDialog";
 import DailyNoteDialog from "@/components/DailyNoteDialog";
+import Linkify from "@/components/Linkify";
 import ScheduleNoteDialog from "@/components/ScheduleNoteDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -735,7 +736,7 @@ const CheckIn = () => {
                               >
                                 <CalendarClock className="h-4 w-4 shrink-0 text-primary mt-0.5" />
                                 <div className="flex-1">
-                                  <p className="text-foreground whitespace-pre-line">{notice.note}</p>
+                                  <p className="text-foreground whitespace-pre-line"><Linkify text={notice.note} /></p>
                                   {notice.acknowledgedAt ? (
                                     <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-green-700">
                                       <CheckCircle2 className="h-3.5 w-3.5" />
@@ -764,7 +765,7 @@ const CheckIn = () => {
                                   <p className="font-semibold text-foreground">
                                     Note{child.dailyNoteDate ? ` from ${formatNoteDate(child.dailyNoteDate)}` : ""}
                                   </p>
-                                  <p className="text-muted-foreground">{child.dailyNote}</p>
+                                  <p className="text-muted-foreground"><Linkify text={child.dailyNote} /></p>
                                 </div>
                               </div>
                             </div>
