@@ -218,7 +218,7 @@ const Contact = () => {
                   <CheckCircle2 className="w-16 h-16 text-green-600 mb-4" />
                   <h4 className="text-2xl font-black text-slate-900 mb-2">Thank you! We got your message.</h4>
                   <p className="text-slate-600 mb-6 max-w-sm">
-                    We'll call or text you within one business day to answer your questions and set up a tour.
+                    We will reply to you soon.
                   </p>
                   <Button variant="outline" onClick={() => setStatus('idle')}>Send another inquiry</Button>
                 </div>
