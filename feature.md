@@ -37,8 +37,12 @@ down are the stable architecture snapshot and don't get reshuffled._
   `utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_term={keyword}`
   (leave Tracking template empty; keep Auto-tagging on). Google Business
   Profile website link: `https://aamadaycare.com/?utm_source=google&utm_medium=organic&utm_campaign=gbp`.
-  Not done yet: Cloudflare Turnstile widget (needs a site key; backend
-  check turns on with `TURNSTILE_SECRET_KEY`).
+  **Cloudflare Turnstile:** `components/TurnstileWidget.tsx` renders the
+  widget (site key `0x4AAAAAAFyjCoLSqI-_PtcX`, Managed mode; Cloudflare's
+  always-pass test key in dev) and the form sends `turnstileToken`, reset
+  after every attempt. If the script can't load, the form stays usable and
+  the backend's answer decides. **Set the backend's `TURNSTILE_SECRET_KEY`
+  only after this is deployed**, or every inquiry fails verification.
 
   **Verified:** lint + `vite build` pass. Playwright against a local
   dry-run backend: ad landing → submit → success panel, payload carried the

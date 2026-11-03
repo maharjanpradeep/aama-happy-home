@@ -428,6 +428,8 @@ export interface InquiryPayload {
   message?: string;
   // Honeypot — always empty for real visitors.
   website?: string;
+  // Cloudflare Turnstile token (single-use).
+  turnstileToken?: string;
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;

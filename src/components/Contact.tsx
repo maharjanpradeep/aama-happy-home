@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { MapPin, Phone, Mail, Clock, Send, Facebook, Instagram, CheckCircle2, Loader2, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/auth-context";
 import { GoogleLogin } from '@react-oauth/google';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CONTACT_EMAIL, CONTACT_PHONE, defaultInquiryMailto, defaultInquirySms, directionsUrl } from '@/lib/contact';
 import { trackCta } from '@/lib/analytics';
 import { getAttribution } from '@/lib/attribution';
 import { ApiError, isInquiryApiConfigured, submitInquiry } from '@/lib/checkin';
+import TurnstileWidget, { TurnstileHandle } from '@/components/TurnstileWidget';
 
 type FormStatus = 'idle' | 'sending' | 'sent' | 'error';
 
@@ -36,6 +37,12 @@ const Contact = () => {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [status, setStatus] = useState<FormStatus>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const turnstileRef = useRef<TurnstileHandle>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  // If the bot check can't load (ad blocker, network), don't lock the form: let
+  // them submit and the backend's answer (with Call / Text buttons) takes over.
+  const [turnstileFailed, setTurnstileFailed] = useState(false);
+  const waitingForCheck = !turnstileToken && !turnstileFailed;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -69,7 +76,7 @@ const Contact = () => {
     setStatus('sending');
     setErrorMessage('');
     try {
-      await submitInquiry({ ...formData, ...getAttribution() });
+      await submitInquiry({ ...formData, ...getAttribution(), turnstileToken: turnstileToken || undefined });
       // Counted only once the backend has actually emailed the inquiry.
       trackCta('inquiry_submit', 'contact_form');
       setStatus('sent');
@@ -82,6 +89,10 @@ const Contact = () => {
           : "We couldn't send your message. Please check your connection, or call or text us."
       );
       setStatus('error');
+    } finally {
+      // Turnstile tokens are single-use; get a fresh one for any retry.
+      setTurnstileToken('');
+      turnstileRef.current?.reset();
     }
   };
 
@@ -325,12 +336,21 @@ const Contact = () => {
                   </div>
                 )}
 
+                <TurnstileWidget
+                  ref={turnstileRef}
+                  onToken={(token) => { setTurnstileToken(token); setTurnstileFailed(false); }}
+                  onExpire={() => setTurnstileToken('')}
+                  onError={() => setTurnstileFailed(true)}
+                />
+
                 <Button
-                  type="submit" size="lg" disabled={status === 'sending'}
+                  type="submit" size="lg" disabled={status === 'sending' || waitingForCheck}
                   className="w-full text-lg py-6 mt-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
                 >
                   {status === 'sending' ? (
                     <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sending…</>
+                  ) : waitingForCheck ? (
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Verifying…</>
                   ) : (
                     <><Send className="w-5 h-5 mr-2" /> Send Inquiry</>
                   )}
