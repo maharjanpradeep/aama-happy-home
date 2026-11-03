@@ -167,7 +167,7 @@ const AskForReviewCard = ({ idToken, onCreated }: { idToken: string; onCreated: 
         <div>
           <h3 className="text-lg font-bold">Ask for a review</h3>
           <p className="text-sm text-muted-foreground">
-            Each link has its own sample and works for 7 days. They can edit it or ask for a new one, then copy and
+            Each link has its own sample and works for 2 days. They can edit it or ask for a new one, then copy and
             post. Send only to people who know the daycare.
           </p>
         </div>
@@ -310,7 +310,7 @@ const ReviewLinksCard = ({ idToken, links, reload }: { idToken: string; links: A
         <div>
           <h3 className="text-lg font-bold">Review links</h3>
           <p className="text-sm text-muted-foreground">
-            Every link you've created. Each works for 7 days; disable one to stop it early, or delete it.
+            Every link you've created. Each works for 2 days; disable one to stop it early, or delete it.
           </p>
         </div>
         {links.length === 0 ? (
