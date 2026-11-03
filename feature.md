@@ -12,6 +12,43 @@ item added or completed, most recent date on top. The category sections further
 down are the stable architecture snapshot and don't get reshuffled._
 
 ## Recent activity & backlog (newest first)
+- [x] (added 2026-11-03, done 2026-11-03) **Contact form sends through the backend (for Google Ads).**
+  The homepage form used a `mailto:` link: nothing happened for visitors
+  without a mail app, and `cta_inquiry_submit` fired before anything was sent.
+
+  - `Contact.tsx` posts to `aama-service-k`'s public `POST /api/inquiries`
+    (`submitInquiry` in `lib/checkin.ts`) with sending / sent / error states;
+    the error state shows the server's message plus Call / Text buttons.
+  - `cta_inquiry_submit` now fires **only after a 201** (the backend has
+    emailed the inquiry), so it's safe to import into Google Ads as the
+    primary conversion.
+  - Email is now optional; new optional fields **Desired start date** and
+    **Schedule** (Full-time / Part-time / After school / Not sure yet).
+  - Hidden honeypot field `website` (the backend drops anything that fills it).
+  - `lib/attribution.ts`: `captureAttribution()` (called in `main.tsx`)
+    stores the landing page's `utm_*`, `gclid` and external referrer in
+    `sessionStorage` for the visit; they're sent with the inquiry and the
+    email shows "Came from: Google Ads · \"keyword\"", "Google Maps", etc.
+  - Without `VITE_CHECKIN_API_URL` (local dev with no `.env`) the form falls
+    back to the old `mailto:` behaviour and records no conversion.
+
+  **Google Ads setup (do once, before launching ads):** Admin → Account
+  settings → Tracking → **Final URL suffix**:
+  `utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_term={keyword}`
+  (leave Tracking template empty; keep Auto-tagging on). Google Business
+  Profile website link: `https://aamadaycare.com/?utm_source=google&utm_medium=organic&utm_campaign=gbp`.
+  **Cloudflare Turnstile:** `components/TurnstileWidget.tsx` renders the
+  widget (site key `0x4AAAAAAFyjCoLSqI-_PtcX`, Managed mode; Cloudflare's
+  always-pass test key in dev) and the form sends `turnstileToken`, reset
+  after every attempt. If the script can't load, the form stays usable and
+  the backend's answer decides. **Set the backend's `TURNSTILE_SECRET_KEY`
+  only after this is deployed**, or every inquiry fails verification.
+
+  **Verified:** lint + `vite build` pass. Playwright against a local
+  dry-run backend: ad landing → submit → success panel, payload carried the
+  utm/gclid values, `cta_inquiry_submit` fired once; bad phone → server
+  message shown, no conversion; network failure → friendly message, no
+  conversion; iPhone 13 layout has no horizontal overflow.
 - [x] (added 2026-07-20, done 2026-07-20) **Guardian name field: collected at enrollment, displayed instead of email.**
   Backend now stores/requires a guardian name (see
   `aama-service-k/feature.md`) — email stays for registration but isn't

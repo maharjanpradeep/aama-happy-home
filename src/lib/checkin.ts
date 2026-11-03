@@ -416,6 +416,41 @@ export async function deleteReviewLink(idToken: string, id: string): Promise<voi
   return parseResponse(res);
 }
 
+// Public (no sign-in): the homepage contact form. Resolves only once the backend has
+// emailed the inquiry; throws ApiError with a visitor-friendly message otherwise.
+export interface InquiryPayload {
+  name: string;
+  phone: string;
+  email?: string;
+  childAge: string;
+  startDate?: string;
+  schedule?: string;
+  message?: string;
+  // Honeypot — always empty for real visitors.
+  website?: string;
+  // Cloudflare Turnstile token (single-use).
+  turnstileToken?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmTerm?: string;
+  gclid?: string;
+  referrer?: string;
+}
+
+export function isInquiryApiConfigured(): boolean {
+  return Boolean(API_URL);
+}
+
+export async function submitInquiry(payload: InquiryPayload): Promise<{ ok: true }> {
+  const res = await fetch(`${requireApiUrl()}/api/inquiries`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseResponse(res);
+}
+
 // Public (no sign-in): what /review/:id shows.
 export async function fetchReviewLink(token: string): Promise<ReviewLink | { expired: true; platforms: string[] }> {
   const res = await fetch(`${requireApiUrl()}/api/review-links/${encodeURIComponent(token)}`);

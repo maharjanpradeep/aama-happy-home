@@ -3,44 +3,97 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { MapPin, Phone, Mail, Clock, Send, Facebook, Instagram } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Send, Facebook, Instagram, CheckCircle2, Loader2, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/auth-context";
 import { GoogleLogin } from '@react-oauth/google';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CONTACT_EMAIL, CONTACT_PHONE, defaultInquiryMailto, directionsUrl } from '@/lib/contact';
+import { CONTACT_EMAIL, CONTACT_PHONE, defaultInquiryMailto, defaultInquirySms, directionsUrl } from '@/lib/contact';
 import { trackCta } from '@/lib/analytics';
+import { getAttribution } from '@/lib/attribution';
+import { ApiError, isInquiryApiConfigured, submitInquiry } from '@/lib/checkin';
+import TurnstileWidget, { TurnstileHandle } from '@/components/TurnstileWidget';
+
+type FormStatus = 'idle' | 'sending' | 'sent' | 'error';
+
+const SCHEDULE_OPTIONS = ['Full-time', 'Part-time', 'After school', 'Not sure yet'];
+
+const EMPTY_FORM = {
+  name: '',
+  email: '',
+  phone: '',
+  childAge: '',
+  startDate: '',
+  schedule: '',
+  message: '',
+  // Honeypot: hidden from people, so only bots fill it in.
+  website: '',
+};
 import { SOCIAL_URLS } from '@/lib/social';
 
 const Contact = () => {
   const { user, login, logout } = useAuth();
   const [showGoogleLogin, setShowGoogleLogin] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    childAge: '',
-    message: ''
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [status, setStatus] = useState<FormStatus>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+  const turnstileRef = useRef<TurnstileHandle>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  // If the bot check can't load (ad blocker, network), don't lock the form: let
+  // them submit and the backend's answer (with Call / Text buttons) takes over.
+  const [turnstileFailed, setTurnstileFailed] = useState(false);
+  const waitingForCheck = !turnstileToken && !turnstileFailed;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Construct mailto link
+  // Fallback when no backend is configured (e.g. local dev without .env): the old
+  // behaviour of opening the visitor's mail app. Not counted as a conversion.
+  const openMailFallback = () => {
     const subject = encodeURIComponent(`New Inquiry from ${formData.name}`);
     const body = encodeURIComponent(
       `Name: ${formData.name}\n` +
       `Email: ${formData.email}\n` +
       `Phone: ${formData.phone}\n` +
-      `Child's Age: ${formData.childAge}\n\n` +
+      `Child's Age: ${formData.childAge}\n` +
+      `Start Date: ${formData.startDate}\n` +
+      `Schedule: ${formData.schedule}\n\n` +
       `Message:\n${formData.message}`
     );
-    trackCta('inquiry_submit', 'contact_form');
     window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (status === 'sending') return;
+    if (!isInquiryApiConfigured()) {
+      openMailFallback();
+      return;
+    }
+
+    setStatus('sending');
+    setErrorMessage('');
+    try {
+      await submitInquiry({ ...formData, ...getAttribution(), turnstileToken: turnstileToken || undefined });
+      // Counted only once the backend has actually emailed the inquiry.
+      trackCta('inquiry_submit', 'contact_form');
+      setStatus('sent');
+      setFormData(EMPTY_FORM);
+    } catch (err) {
+      // Server errors carry a visitor-friendly message; a dropped connection doesn't.
+      setErrorMessage(
+        err instanceof ApiError && err.message
+          ? err.message
+          : "We couldn't send your message. Please check your connection, or call or text us."
+      );
+      setStatus('error');
+    } finally {
+      // Turnstile tokens are single-use; get a fresh one for any retry.
+      setTurnstileToken('');
+      turnstileRef.current?.reset();
+    }
   };
 
   const handleGoogleSuccess = (credentialResponse: { credential?: string }) => {
@@ -171,12 +224,23 @@ const Contact = () => {
               <h3 className="text-2xl font-black text-slate-900 mb-2">Send an Inquiry</h3>
               <p className="text-slate-500 mb-6">Fill out the form below and we'll get back to you to schedule your visit.</p>
 
+              {status === 'sent' ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center py-10" role="status" aria-live="polite">
+                  <CheckCircle2 className="w-16 h-16 text-green-600 mb-4" />
+                  <h4 className="text-2xl font-black text-slate-900 mb-2">Thank you! We got your message.</h4>
+                  <p className="text-slate-600 mb-6 max-w-sm">
+                    We will reply to you soon.
+                  </p>
+                  <Button variant="outline" onClick={() => setStatus('idle')}>Send another inquiry</Button>
+                </div>
+              ) : (
               <form onSubmit={handleFormSubmit} className="space-y-5 flex-1 flex flex-col">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
                     <Input
-                      id="name" name="name" placeholder="Your full name" required
+                      id="name" name="name" placeholder="Your full name" required maxLength={100}
+                      autoComplete="name"
                       value={formData.name} onChange={handleInputChange}
                       className="bg-slate-50"
                     />
@@ -184,7 +248,8 @@ const Contact = () => {
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input
-                      id="phone" name="phone" type="tel" placeholder="Your phone number" required
+                      id="phone" name="phone" type="tel" placeholder="Your phone number" required maxLength={30}
+                      autoComplete="tel"
                       value={formData.phone} onChange={handleInputChange}
                       className="bg-slate-50"
                     />
@@ -193,9 +258,10 @@ const Contact = () => {
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
+                    <Label htmlFor="email">Email Address <span className="text-slate-400 font-normal">(optional)</span></Label>
                     <Input
-                      id="email" name="email" type="email" placeholder="your@email.com" required
+                      id="email" name="email" type="email" placeholder="your@email.com" maxLength={200}
+                      autoComplete="email"
                       value={formData.email} onChange={handleInputChange}
                       className="bg-slate-50"
                     />
@@ -203,27 +269,94 @@ const Contact = () => {
                   <div className="space-y-2">
                     <Label htmlFor="childAge">Child's Age</Label>
                     <Input
-                      id="childAge" name="childAge" placeholder="e.g. 2 years old" required
+                      id="childAge" name="childAge" placeholder="e.g. 2 years old" required maxLength={60}
                       value={formData.childAge} onChange={handleInputChange}
                       className="bg-slate-50"
                     />
                   </div>
                 </div>
 
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="startDate">Desired Start Date <span className="text-slate-400 font-normal">(optional)</span></Label>
+                    <Input
+                      id="startDate" name="startDate" placeholder="e.g. January 2027" maxLength={60}
+                      value={formData.startDate} onChange={handleInputChange}
+                      className="bg-slate-50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="schedule">Schedule <span className="text-slate-400 font-normal">(optional)</span></Label>
+                    <select
+                      id="schedule" name="schedule"
+                      value={formData.schedule} onChange={handleInputChange}
+                      className="flex h-10 w-full rounded-md border border-input bg-slate-50 px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                    >
+                      <option value="">Choose one…</option>
+                      {SCHEDULE_OPTIONS.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div className="space-y-2 flex-1 flex flex-col">
-                  <Label htmlFor="message">Message / Questions</Label>
+                  <Label htmlFor="message">Message / Questions <span className="text-slate-400 font-normal">(optional)</span></Label>
                   <Textarea
-                    id="message" name="message" placeholder="Tell us about your childcare needs..."
+                    id="message" name="message" placeholder="Tell us about your childcare needs..." maxLength={2000}
                     className="bg-slate-50 flex-1 min-h-[100px]"
                     value={formData.message} onChange={handleInputChange}
                   />
                 </div>
 
-                <Button type="submit" size="lg" className="w-full text-lg py-6 mt-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
-                  <Send className="w-5 h-5 mr-2" />
-                  Send Inquiry
+                {/* Honeypot: off-screen and skipped by keyboard and screen readers. */}
+                <div aria-hidden="true" className="absolute -left-[9999px] w-px h-px overflow-hidden">
+                  <label htmlFor="website">Website</label>
+                  <input
+                    id="website" name="website" type="text" tabIndex={-1} autoComplete="off"
+                    value={formData.website} onChange={handleInputChange}
+                  />
+                </div>
+
+                {status === 'error' && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
+                    <p className="font-semibold mb-3">{errorMessage}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <a href={`tel:${CONTACT_PHONE}`} onClick={() => trackCta('call', 'contact_form_error')}>
+                        <Button type="button" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white gap-1">
+                          <Phone className="w-4 h-4" /> Call us
+                        </Button>
+                      </a>
+                      <a href={defaultInquirySms} onClick={() => trackCta('text', 'contact_form_error')}>
+                        <Button type="button" size="sm" variant="outline" className="gap-1">
+                          <MessageSquare className="w-4 h-4" /> Text us
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                <TurnstileWidget
+                  ref={turnstileRef}
+                  onToken={(token) => { setTurnstileToken(token); setTurnstileFailed(false); }}
+                  onExpire={() => setTurnstileToken('')}
+                  onError={() => setTurnstileFailed(true)}
+                />
+
+                <Button
+                  type="submit" size="lg" disabled={status === 'sending' || waitingForCheck}
+                  className="w-full text-lg py-6 mt-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
+                >
+                  {status === 'sending' ? (
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Sending…</>
+                  ) : waitingForCheck ? (
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Verifying…</>
+                  ) : (
+                    <><Send className="w-5 h-5 mr-2" /> Send Inquiry</>
+                  )}
                 </Button>
               </form>
+              )}
 
             </div>
           </div>
