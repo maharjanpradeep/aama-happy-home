@@ -98,7 +98,7 @@ const Hero: React.FC<HeroProps> = ({ backToHomeButton }) => {
             A safe, loving daycare in San Ramon, CA — where little dreams grow big.
           </p>
           <p className="text-base md:text-lg mb-10 leading-relaxed max-w-2xl text-slate-500">
-            Infant, toddler, preschool &amp; after-school care — proudly serving San Ramon, Dublin, Danville &amp; Pleasanton.
+            Toddler, preschool &amp; after-school care — proudly serving San Ramon, Dublin, Danville &amp; Pleasanton.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center md:justify-start items-center">

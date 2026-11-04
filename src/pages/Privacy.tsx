@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { CONTACT_EMAIL, CONTACT_PHONE } from "@/lib/contact";
 
-const LAST_UPDATED = "October 6, 2026";
+const LAST_UPDATED = "November 4, 2026";
 
 const formattedPhone = `${CONTACT_PHONE.slice(0, 3)}-${CONTACT_PHONE.slice(3, 6)}-${CONTACT_PHONE.slice(6)}`;
 
@@ -52,8 +52,17 @@ const Privacy = () => {
                 through our email provider.
               </li>
               <li>
-                <strong>Website analytics.</strong> We use Google Analytics to see how many people visit the site
-                and which pages they view. It uses cookies and does not tell us who you are.
+                <strong>Website inquiries.</strong> When you send the contact form, we receive your name, phone
+                number, your child's age and anything else you choose to add (email, desired start date, schedule
+                and message), along with how you found our site (for example, a Google ad or search). We email it to
+                our staff so we can reply. The form uses Cloudflare Turnstile to block spam bots, which checks
+                information about your browser and device.
+              </li>
+              <li>
+                <strong>Website analytics and advertising.</strong> We use Google Analytics and Google Ads to see
+                how many people visit the site, which pages they view, and which ads lead to calls or inquiries.
+                These use cookies and similar technology. Google may also use them to show our ads to people who
+                have visited our site before (remarketing). They do not tell us who you are.
               </li>
             </ul>
           </Section>
@@ -72,8 +81,8 @@ const Privacy = () => {
               We use this information only to run the daycare: checking children in and out, contacting
               families, and sharing updates about our program. We do not sell or rent personal information, and
               we do not share it with anyone except the service providers that run our systems (Google,
-              Meta for Facebook and Instagram, our email provider and our website host), or when required by law
-              or by California child care licensing.
+              including Google Analytics and Google Ads, Meta for Facebook and Instagram, Cloudflare, our email
+              provider and our website host), or when required by law or by California child care licensing.
             </p>
             <p>
               Our use of information received from Google APIs adheres to the{" "}
@@ -107,6 +116,27 @@ const Privacy = () => {
             <p>
               You can ask to see, correct or delete your family's information, or ask us to remove a photo, by
               contacting us. California residents may have additional rights under state law.
+            </p>
+            <p>
+              To limit personalized ads, visit{" "}
+              <a
+                href="https://adssettings.google.com"
+                className="text-primary underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Google Ad Settings
+              </a>
+              . To stop Google Analytics from collecting your visits, use the{" "}
+              <a
+                href="https://tools.google.com/dlpage/gaoptout"
+                className="text-primary underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Google Analytics opt-out browser add-on
+              </a>
+              . You can also block or delete cookies in your browser settings.
             </p>
           </Section>
 
